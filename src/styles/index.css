@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Layout and components follow stock-hiteffect-frontend; colors and fonts follow
+ * the Hit Effect brand ("Hit Effect — TCG Shop" Figma file, as used in hiteffect-frontend):
+ * Inter for text, IBM Plex Mono for labels and numbers, Cinzel for page titles,
+ * orange accent, cyan focus outlines, light surfaces.
+ * Every color used in the UI is exposed as a Tailwind color (bg-*, text-*, border-*).
+ */
+@theme inline {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'Cinzel', Georgia, serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-badge: var(--badge);
+
+  /* Semantic */
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
+}
+
+:root {
+  --background: #f3f5f8;
+  --foreground: #171a1f;
+  --card: #ffffff;
+  /* Brand orange for fills; the strong shade is for orange text on white (readable contrast). */
+  --primary: #ff7a1a;
+  --primary-strong: #b9530a;
+  --primary-foreground: #1a0f08;
+  --secondary: #f8f9fb;
+  --muted: #eef1f4;
+  --muted-foreground: #5e636b;
+  --border: #d9dee5;
+  --ring: #2eb6e0;
+  --sidebar: #ffffff;
+  --sidebar-border: #d7dee7;
+  --badge: #2a2416;
+
+  --success: #1c8a4b;
+  --danger: #c1362f;
+  --info: #127a9c;
+  --warning: #9a5b00;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #c9d0d9 transparent;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: var(--font-sans);
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Gradient behind the login and sign-up screens (from hiteffect-frontend). */
+.brand-gradient {
+  background: linear-gradient(
+    134.35deg,
+    rgb(221, 248, 255) 12.95%,
+    rgb(231, 242, 255) 37.41%,
+    rgb(255, 244, 184) 61.87%,
+    rgb(255, 217, 199) 84.89%
+  );
+}
