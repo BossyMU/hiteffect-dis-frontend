@@ -1,11 +1,15 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { errorMessage } from '@/api'
 import { Toast } from '@/components/ui/Toast'
 
 interface ToastState {
+  id: number
   kind: 'error' | 'success'
   message: string
 }
+
+/** How long a success message stays: at least 8 seconds, longer for long messages, at most 15. Errors stay until dismissed. */
+const successDuration = (message: string) => Math.min(15_000, 8_000 + message.length * 40)
 
 interface Toasts {
   showError: (message: string) => void
@@ -21,11 +25,14 @@ const ToastContext = createContext<Toasts | null>(null)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null)
+  const lastId = useRef(0)
 
   const show = useCallback((kind: ToastState['kind'], message: string) => {
-    setToast({ kind, message })
+    const id = ++lastId.current
+    setToast({ id, kind, message })
+    // Only close this message, not a newer one shown in the meantime.
     if (kind === 'success')
-      window.setTimeout(() => setToast((t) => (t?.message === message ? null : t)), 4000)
+      window.setTimeout(() => setToast((t) => (t?.id === id ? null : t)), successDuration(message))
   }, [])
 
   const value = useMemo<Toasts>(
@@ -36,7 +43,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         try {
           await action()
           if (successMessage) show('success', successMessage)
-          else setToast(null)
+          // Clear an earlier error, but keep a success message the action showed itself.
+          else setToast((t) => (t?.kind === 'error' ? null : t))
           return true
         } catch (err) {
           show('error', errorMessage(err))
