@@ -3,6 +3,7 @@ import type {
   OrderStatus,
   PaymentKind,
   PaymentMethod,
+  SlipMethod,
   PaymentStatus,
   RoundStatus,
   UserStatus,
@@ -91,7 +92,16 @@ export const PAYMENT_KIND_LABEL: Record<PaymentKind, string> = {
   full: 'Full payment',
 }
 
-export const PAYMENT_METHODS: PaymentMethod[] = ['PromptPay', 'Bank Transfer']
+export const PAYMENT_METHODS: SlipMethod[] = ['PromptPay', 'Bank Transfer']
+
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  PromptPay: 'PromptPay',
+  'Bank Transfer': 'Bank Transfer',
+  Xendit: 'Online (Xendit)',
+}
+
+/** An online payment that is still open shows this instead of "To check". */
+export const ONLINE_PENDING: StatusStyle = { label: 'Paying online', tone: 'warning' }
 
 export const USER_STATUS: Record<UserStatus, StatusStyle> = {
   pending: { label: 'Waiting for approval', tone: 'warning' },

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { adminApi } from '@/api'
+import { adminApi, errorMessage } from '@/api'
 import {
   Button,
   DataTable,
@@ -17,7 +17,7 @@ import {
   TableRow,
   TextArea,
 } from '@/components/ui'
-import { PAYMENT_KIND_LABEL, PAYMENT_STATUS } from '@/constants/status'
+import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS } from '@/constants/status'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import type { Payment, PaymentStatus } from '@/types'
@@ -25,7 +25,7 @@ import { formatBaht, formatDateTime } from '@/utils/format'
 
 const FILTERS: (PaymentStatus | 'all')[] = ['pending', 'confirmed', 'rejected', 'all']
 
-/** Check transfer slips by hand: confirm or reject each one. */
+/** Check transfer slips by hand (confirm or reject each one), and follow online payments. */
 export default function PaymentsPage() {
   const [filter, setFilter] = useState<PaymentStatus | 'all'>('pending')
   const { data, status, error, reload } = useApiData(() => adminApi.payments(filter), [filter])
@@ -35,7 +35,7 @@ export default function PaymentsPage() {
     <div className="space-y-5">
       <PageHeader
         title="Payments"
-        subtitle="Deposit, balance and order slips. A slip counts from the time it was sent."
+        subtitle="Slips to check by hand, and online payments that Xendit confirms. A payment counts from the time it was sent."
       />
       <FilterBar>
         {FILTERS.map((f) => (
@@ -68,11 +68,11 @@ export default function PaymentsPage() {
               <TableCell className="text-sm">{PAYMENT_KIND_LABEL[p.kind]}</TableCell>
               <TableCell className="font-mono font-semibold">{formatBaht(p.amount)}</TableCell>
               <TableCell className="text-xs text-muted-foreground">
-                {p.method}
+                {PAYMENT_METHOD_LABEL[p.method]}
                 {p.reference && <p>Ref {p.reference}</p>}
               </TableCell>
               <TableCell>
-                <PaymentStatusBadge status={p.status} />
+                <PaymentStatusBadge status={p.status} online={p.method === 'Xendit'} />
               </TableCell>
               <TableCell>
                 <Button
@@ -110,13 +110,30 @@ function ReviewModal({
   onClose: () => void
   onDone: () => void
 }) {
-  const { run } = useToast()
+  const { run, showError, showSuccess } = useToast()
   const { data: detail, status, error, reload } = useApiData(() => adminApi.payment(payment.id), [payment.id])
   const [rejecting, setRejecting] = useState(false)
   const [reason, setReason] = useState('')
   const [reasonError, setReasonError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const pending = payment.status === 'pending'
+  const online = payment.method === 'Xendit'
+  // An online payment can only be closed by hand once Xendit's page has stopped taking payments.
+  const pageOpen = online && !!payment.checkoutExpiresAt && new Date(payment.checkoutExpiresAt) > new Date()
+
+  async function checkWithXendit() {
+    setBusy(true)
+    try {
+      const { status: settled } = await adminApi.checkPayment(payment.id)
+      if (settled === 'pending') return showSuccess('Xendit has not settled this payment yet.')
+      showSuccess(settled === 'confirmed' ? 'Xendit confirmed the payment' : 'The shop did not finish paying')
+      onDone()
+    } catch (err) {
+      showError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function confirm() {
     setBusy(true)
@@ -133,7 +150,7 @@ function ReviewModal({
     setBusy(true)
     const ok = await run(
       () => adminApi.rejectPayment(payment.id, reason.trim()),
-      'Slip rejected; the shop has been told',
+      online ? 'Payment closed; the shop has been told' : 'Slip rejected; the shop has been told',
     )
     setBusy(false)
     if (ok) onDone()
@@ -153,7 +170,18 @@ function ReviewModal({
                   Back
                 </Button>
                 <Button variant="destructive" disabled={busy} onClick={() => void reject()}>
-                  Reject slip
+                  {online ? 'Close as unpaid' : 'Reject slip'}
+                </Button>
+              </>
+            ) : online ? (
+              <>
+                {!pageOpen && (
+                  <Button variant="secondary" disabled={busy} onClick={() => setRejecting(true)}>
+                    Close as unpaid…
+                  </Button>
+                )}
+                <Button disabled={busy} onClick={() => void checkWithXendit()}>
+                  Check with Xendit
                 </Button>
               </>
             ) : (
@@ -174,7 +202,10 @@ function ReviewModal({
         <DetailList
           items={[
             ['Amount', <span className="font-mono font-semibold">{formatBaht(payment.amount)}</span>],
-            ['Method', `${payment.method}${payment.reference ? ` · ref ${payment.reference}` : ''}`],
+            [
+              'Method',
+              `${PAYMENT_METHOD_LABEL[payment.method]}${payment.reference ? ` · ref ${payment.reference}` : ''}`,
+            ],
             ['Order', <span className="font-mono">{payment.orderNo}</span>],
             ['Order status', <OrderStatusBadge status={payment.orderStatus} />],
             ['Sent', formatDateTime(payment.submittedAt)],
@@ -188,19 +219,30 @@ function ReviewModal({
             {payment.rejectReason && `: ${payment.rejectReason}`}
           </p>
         )}
-        <LoadState status={status} error={error} onRetry={reload}>
-          {detail?.slipImage ? (
-            <a href={detail.slipImage} target="_blank" rel="noreferrer">
-              <img
-                src={detail.slipImage}
-                alt="Transfer slip"
-                className="max-h-[50vh] w-full rounded-md border border-border object-contain"
-              />
-            </a>
-          ) : (
-            <StatusPanel title="No slip image" />
-          )}
-        </LoadState>
+        {online ? (
+          <p className="rounded-lg border border-border bg-muted px-4 py-3 text-sm">
+            Paid online on Xendit's page, so there is no slip.{' '}
+            {pending
+              ? pageOpen
+                ? `The shop can pay until ${formatDateTime(payment.checkoutExpiresAt)}; Xendit confirms it by itself.`
+                : "Xendit's page has closed. Check with Xendit to settle this payment."
+              : 'Xendit settled this payment.'}
+          </p>
+        ) : (
+          <LoadState status={status} error={error} onRetry={reload}>
+            {detail?.slipImage ? (
+              <a href={detail.slipImage} target="_blank" rel="noreferrer">
+                <img
+                  src={detail.slipImage}
+                  alt="Transfer slip"
+                  className="max-h-[50vh] w-full rounded-md border border-border object-contain"
+                />
+              </a>
+            ) : (
+              <StatusPanel title="No slip image" />
+            )}
+          </LoadState>
+        )}
         {rejecting && (
           <Field label="Reason (sent to the shop)" htmlFor="reject-reason" error={reasonError}>
             <TextArea
@@ -211,13 +253,18 @@ function ReviewModal({
                 setReason(e.target.value)
                 setReasonError(null)
               }}
-              placeholder="e.g. The amount on the slip does not match"
+              placeholder={
+                online
+                  ? 'e.g. The shop paid by transfer instead'
+                  : 'e.g. The amount on the slip does not match'
+              }
             />
           </Field>
         )}
         {pending && payment.kind === 'deposit' && (
           <p className="text-xs text-muted-foreground">
-            Rejecting a deposit cancels the order and reopens the offer if its deadline has not passed.
+            {online ? 'Closing' : 'Rejecting'} a deposit cancels the order and reopens the offer if its
+            deadline has not passed.
           </p>
         )}
       </div>

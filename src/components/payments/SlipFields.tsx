@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Field, Select, TextInput } from '@/components/ui'
 import { PAYMENT_DETAILS } from '@/constants/company'
 import { PAYMENT_METHODS } from '@/constants/status'
-import type { PaymentMethod, SlipUpload } from '@/types'
+import type { SlipMethod, SlipUpload } from '@/types'
 import { formatBaht } from '@/utils/format'
 import { imageFileToDataUrl } from '@/utils/image'
 
@@ -14,7 +14,7 @@ interface SlipFieldsProps {
 
 /** "Pay ฿X to …", payment method, transfer reference and the slip image (shrunk before upload). */
 export function SlipFields({ amount, onChange }: SlipFieldsProps) {
-  const [method, setMethod] = useState<PaymentMethod>('PromptPay')
+  const [method, setMethod] = useState<SlipMethod>('PromptPay')
   const [reference, setReference] = useState('')
   const [slipImage, setSlipImage] = useState('')
   const [fileError, setFileError] = useState<string | null>(null)
@@ -53,11 +53,7 @@ export function SlipFields({ amount, onChange }: SlipFieldsProps) {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Paid by" htmlFor="slip-method">
-          <Select
-            id="slip-method"
-            value={method}
-            onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-          >
+          <Select id="slip-method" value={method} onChange={(e) => setMethod(e.target.value as SlipMethod)}>
             {PAYMENT_METHODS.map((m) => (
               <option key={m}>{m}</option>
             ))}

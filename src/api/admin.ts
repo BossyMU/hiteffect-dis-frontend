@@ -75,4 +75,6 @@ export const adminApi = {
   confirmPayment: (id: string) => post<PaymentDetail>(`/admin/payments/${id}/confirm`),
   rejectPayment: (id: string, reason: string) =>
     post<PaymentDetail>(`/admin/payments/${id}/reject`, { reason }),
+  /** Ask Xendit how an online payment went, and apply it. */
+  checkPayment: (id: string) => post<PaymentDetail>(`/admin/payments/${id}/check`),
 }

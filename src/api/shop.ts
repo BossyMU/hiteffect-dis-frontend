@@ -1,5 +1,13 @@
 /** Calls a shop account makes. */
-import type { Order, ShopDashboard, ShopProduct, ShopRound, SlipUpload } from '@/types'
+import type {
+  OnlineCheckout,
+  Order,
+  PaymentOptions,
+  ShopDashboard,
+  ShopProduct,
+  ShopRound,
+  SlipUpload,
+} from '@/types'
 import { request } from './client'
 
 export const shopApi = {
@@ -16,6 +24,15 @@ export const shopApi = {
       method: 'POST',
       body: { qty, ...slip },
     }),
+  /** Accept and pay the deposit online: returns Xendit's payment page. */
+  acceptOfferOnline: (allocationId: string, qty: number) =>
+    request<{ roundId: string; orderId: string; checkoutUrl: string }>(
+      `/shop/allocations/${allocationId}/accept`,
+      {
+        method: 'POST',
+        body: { qty, method: 'Xendit' },
+      },
+    ),
   declineOffer: (allocationId: string) =>
     request<void>(`/shop/allocations/${allocationId}/decline`, { method: 'POST' }),
 
@@ -29,4 +46,11 @@ export const shopApi = {
   cancelOrder: (id: string) => request<Order>(`/shop/orders/${id}/cancel`, { method: 'POST' }),
   pay: (orderId: string, slip: SlipUpload) =>
     request<Order>(`/shop/orders/${orderId}/payments`, { method: 'POST', body: slip }),
+  /** Pay online: returns Xendit's payment page (the same page again if one is still open). */
+  payOnline: (orderId: string) =>
+    request<OnlineCheckout>(`/shop/orders/${orderId}/pay-online`, { method: 'POST' }),
+  /** Back from Xendit's page: the backend checks the payment with Xendit and returns the order. */
+  checkPayment: (paymentId: string) =>
+    request<Order>(`/shop/payments/${paymentId}/check`, { method: 'POST' }),
+  paymentOptions: () => request<PaymentOptions>('/payment-options'),
 }

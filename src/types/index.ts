@@ -262,7 +262,10 @@ export type OrderStatus =
   'awaiting_deposit' | 'awaiting_stock' | 'pending_payment' | 'paid' | 'shipped' | 'cancelled'
 
 export type PaymentKind = 'deposit' | 'balance' | 'full'
-export type PaymentMethod = 'PromptPay' | 'Bank Transfer'
+/** Ways to pay by transfer slip, checked by an admin. */
+export type SlipMethod = 'PromptPay' | 'Bank Transfer'
+/** 'Xendit': paid online on Xendit's page, confirmed by Xendit. */
+export type PaymentMethod = SlipMethod | 'Xendit'
 export type PaymentStatus = 'pending' | 'confirmed' | 'rejected'
 
 export interface OrderItem {
@@ -283,6 +286,9 @@ export interface OrderPayment {
   submittedAt: string
   reviewedAt: string | null
   rejectReason: string
+  /** Xendit's payment page, while an online payment is open. */
+  checkoutUrl: string | null
+  checkoutExpiresAt: string | null
 }
 
 export interface Order {
@@ -330,6 +336,8 @@ export interface Payment {
   reviewedAt: string | null
   reviewedBy: string | null
   rejectReason: string
+  /** Online payments: Xendit's page stops taking payments after this. */
+  checkoutExpiresAt: string | null
 }
 
 export interface PaymentDetail extends Payment {
@@ -340,9 +348,20 @@ export interface PaymentDetail extends Payment {
 
 /** What a shop sends with a deposit, balance or full payment. */
 export interface SlipUpload {
-  method: PaymentMethod
+  method: SlipMethod
   reference: string
   slipImage: string
+}
+
+/** Whether shops can pay online (Xendit is set up on the backend). */
+export interface PaymentOptions {
+  onlinePayment: boolean
+}
+
+/** An online payment that was started: send the shop to `checkoutUrl`. */
+export interface OnlineCheckout {
+  paymentId: string
+  checkoutUrl: string
 }
 
 // ─── Dashboards ─────────────────────────────────────────────────────────────

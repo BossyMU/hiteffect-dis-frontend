@@ -59,13 +59,13 @@ One app, two roles. Shops and admins log in on the same page and see different m
 | `/products/:id`          | shop  | One product: photo, tier price, stock, quantity and **Add to cart**                                                                                                                                              |
 | `/preorders`             | shop  | Pre-orders open for requests (before the deadline), as the same kind of card grid: request boxes. Once requests close they move to My pre-orders                                                                 |
 | `/my-preorders`          | shop  | (Menu item) Track every pre-order the shop took part in: a step tracker (request → offer → deposit → stock → balance → shipped), what was asked, offered and accepted, what is paid and due, and the next action |
-| `/preorders/:id`         | shop  | One pre-order: quantity and **Request boxes** (no payment), then accept the offer with the deposit slip, or decline; the steps and dates                                                                         |
+| `/preorders/:id`         | shop  | One pre-order: quantity and **Request boxes** (no payment), then accept the offer and pay the deposit (online or by slip), or decline; the steps and dates                                                       |
 | `/cart`                  | shop  | The cart: change quantities, add a note, **Place order**; also lists the shop's open pre-order requests                                                                                                          |
-| `/orders`, `/orders/:id` | shop  | Track orders; pay the balance or a regular order with a slip                                                                                                                                                     |
+| `/orders`, `/orders/:id` | shop  | Track orders; pay the balance or a regular order online or with a slip; continue or check an online payment                                                                                                      |
 | `/profile`               | all   | Contact, shipping and tax invoice details; password                                                                                                                                                              |
 | `/admin`                 | admin | Slips to check, orders to ship, shops to approve; run the deadline check                                                                                                                                         |
 | `/admin/rounds`          | admin | Create rounds; each round page walks through open → allocate → publish → arrive → close, or cancel before offers                                                                                                 |
-| `/admin/payments`        | admin | View slips and confirm or reject them                                                                                                                                                                            |
+| `/admin/payments`        | admin | View slips and confirm or reject them; follow online payments (**Check with Xendit**)                                                                                                                            |
 | `/admin/orders`          | admin | Ship paid orders (with tracking number); cancel orders                                                                                                                                                           |
 | `/admin/products`        | admin | Products, tier prices, stock corrections and the stock ledger                                                                                                                                                    |
 | `/admin/shops`           | admin | Approve shops, set tier and history bonus; edit tiers                                                                                                                                                            |
@@ -83,7 +83,7 @@ src/
 │   ├── ui/                  # Generic building blocks (Button, Modal, DataTable, badges, …)
 │   ├── layout/              # App shell: Sidebar, mobile bars, login layout, route guards
 │   ├── orders/              # Order summary, used by shop and admin pages
-│   ├── payments/            # Slip upload fields
+│   ├── payments/            # Slip upload fields, Pay online / slip choice
 │   └── notifications/       # Notification list
 │
 ├── pages/                   # One folder per area
@@ -112,6 +112,7 @@ src/
 - **Data.** Each page loads its own data with `useApiData()`. Actions go through `run()` from `useToast()`, which shows the error (or a success message) and resolves to `true`/`false`, so modals stay open on failure. All calls go through `src/api/client.ts`.
 - **Dates.** Every deadline is 23:59 Bangkok time on the date shown (`formatDeadline`), the same cutoff the backend uses.
 - **Slips.** Images are shrunk in the browser (`src/utils/image.ts`) before upload.
+- **Online payments (Xendit).** When the backend has Xendit set up (`GET /payment-options`), every payment form offers **Pay online** next to the slip, and it's the default. The app asks the backend to start the payment, then sends the shop to Xendit's page (`src/utils/checkout.ts`). Xendit sends the shop back to `/orders/:id?payment=:paymentId`, and the order page asks the backend to check the payment with Xendit (a few times if Xendit is still busy) and shows the result. While a payment is open, the order page offers **Continue payment** and **Check payment**. Admins can't confirm online payments by hand; Xendit does.
 
 ## Deployment
 

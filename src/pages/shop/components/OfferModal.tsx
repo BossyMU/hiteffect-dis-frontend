@@ -1,12 +1,15 @@
 import { useCallback, useState } from 'react'
 import { shopApi } from '@/api'
+import { OnlinePayNote, PayMethodChoice, type PayBy } from '@/components/payments/PayMethodChoice'
 import { SlipFields } from '@/components/payments/SlipFields'
 import { Field, Modal, ModalActions, TextInput } from '@/components/ui'
 import { useToast } from '@/context/ToastContext'
+import { usePaymentOptions } from '@/hooks/usePaymentOptions'
 import type { ShopRound, SlipUpload } from '@/types'
+import { goToCheckout } from '@/utils/checkout'
 import { boxes, formatBaht, formatDeadline } from '@/utils/format'
 
-/** Accept all or part of an offer by sending the deposit slip. */
+/** Accept all or part of an offer and pay the deposit: online with Xendit, or by slip. */
 export function OfferModal({
   round,
   onClose,
@@ -23,6 +26,10 @@ export function OfferModal({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const onSlip = useCallback((s: SlipUpload | null) => setSlip(s), [])
+  const online = usePaymentOptions()?.onlinePayment ?? false
+  // Online is the default when it's available, until the shop picks.
+  const [picked, setPicked] = useState<PayBy | null>(null)
+  const payBy = picked ?? (online ? 'online' : 'slip')
 
   const n = Number(qty)
   const validQty = Number.isInteger(n) && n >= 1 && n <= offer.offeredQty
@@ -31,6 +38,15 @@ export function OfferModal({
 
   async function accept() {
     if (!validQty) return setError(`Enter 1 to ${offer.offeredQty}`)
+    if (payBy === 'online') {
+      setBusy(true)
+      const ok = await run(async () =>
+        goToCheckout((await shopApi.acceptOfferOnline(offer.id, n)).checkoutUrl),
+      )
+      // On success the browser is leaving for Xendit's page; keep the button disabled.
+      if (!ok) setBusy(false)
+      return
+    }
     if (!slip) return setError('Attach the deposit slip')
     setBusy(true)
     const ok = await run(
@@ -49,7 +65,7 @@ export function OfferModal({
         <ModalActions
           onCancel={onClose}
           onConfirm={() => void accept()}
-          confirmLabel="Accept and send slip"
+          confirmLabel={payBy === 'online' ? 'Accept and pay online' : 'Accept and send slip'}
           busy={busy}
         />
       }
@@ -85,7 +101,12 @@ export function OfferModal({
           </div>
           <p className="mt-1 text-xs text-muted-foreground">The balance is due when the stock arrives.</p>
         </div>
-        <SlipFields amount={deposit} onChange={onSlip} />
+        {online && <PayMethodChoice value={payBy} onChange={setPicked} />}
+        {payBy === 'online' ? (
+          <OnlinePayNote amount={deposit} />
+        ) : (
+          <SlipFields amount={deposit} onChange={onSlip} />
+        )}
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     </Modal>

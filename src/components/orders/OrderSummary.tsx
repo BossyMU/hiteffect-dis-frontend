@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Badge, DataTable, OrderStatusBadge, PaymentStatusBadge, TableCell, TableRow } from '@/components/ui'
-import { PAYMENT_KIND_LABEL } from '@/constants/status'
+import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL } from '@/constants/status'
 import type { Order, OrderPayment } from '@/types'
 import { cn } from '@/utils/cn'
 import { formatBaht, formatDateTime, formatDeadline } from '@/utils/format'
@@ -131,12 +131,12 @@ export function OrderPaymentsTable({ payments }: { payments: OrderPayment[] }) {
           <TableCell className={cell}>
             <p className="font-medium">{PAYMENT_KIND_LABEL[p.kind]}</p>
             <p className="font-mono text-xs text-muted-foreground">
-              {p.method} · {formatDateTime(p.submittedAt)}
+              {PAYMENT_METHOD_LABEL[p.method]} · {formatDateTime(p.submittedAt)}
               {p.reference && ` · ${p.reference}`}
             </p>
           </TableCell>
           <TableCell className={cell}>
-            <PaymentStatusBadge status={p.status} />
+            <PaymentStatusBadge status={p.status} online={p.method === 'Xendit'} />
             {p.rejectReason && <p className="mt-1 text-xs text-danger">{p.rejectReason}</p>}
           </TableCell>
           <TableCell className={cn(cell, 'text-right font-mono whitespace-nowrap')}>
