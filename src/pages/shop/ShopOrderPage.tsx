@@ -11,6 +11,7 @@ import { usePaymentOptions } from '@/hooks/usePaymentOptions'
 import { PATHS } from '@/routes/paths'
 import type { Order, OrderPayment, SlipUpload } from '@/types'
 import { goToCheckout } from '@/utils/checkout'
+import { lastConfirmedPayment, orderPayStatus } from './payStatus'
 import { formatBaht, formatDate, formatDateTime, formatDeadline } from '@/utils/format'
 
 export default function ShopOrderPage() {
@@ -34,6 +35,8 @@ export default function ShopOrderPage() {
   const pendingPayment = order?.payments.find((p) => p.status === 'pending')
   const onlinePending = pendingPayment?.method === 'Xendit' ? pendingPayment : undefined
   const canPay = order?.status === 'pending_payment' && !pendingPayment
+  // Shown even when nothing is due: "Checking your payment", or "✓ Deposit confirmed" until the next payment.
+  const payButton = order ? orderPayStatus(order) : null
   const canCancel = order?.type === 'regular' && canPay && order.paidAmount === 0
   const openCheckout = onlinePending && checkoutStillOpen(onlinePending) ? onlinePending.checkoutUrl : null
 
@@ -125,7 +128,16 @@ export default function ShopOrderPage() {
               </Button>
             )}
             {openCheckout && <Button onClick={() => goToCheckout(openCheckout)}>Continue payment</Button>}
-            {canPay && <Button onClick={() => setPaying(true)}>Pay {formatBaht(order!.amountDue)}</Button>}
+            {payButton &&
+              !onlinePending &&
+              (payButton.enabled ? (
+                <Button onClick={() => setPaying(true)}>{payButton.label}</Button>
+              ) : (
+                <Button variant="outline" disabled>
+                  {payButton.confirmed && <span className="text-success">✓ </span>}
+                  {payButton.label}
+                </Button>
+              ))}
           </>
         }
       />
@@ -230,6 +242,13 @@ function Facts({ items }: { items: Fact[] }) {
   )
 }
 
+/** "We confirmed your deposit of ฿1,608 on 24 Oct 2026." */
+function confirmedText(order: Order, what: 'deposit' | 'payment') {
+  const p = lastConfirmedPayment(order)
+  if (!p) return `We confirmed your ${what}.`
+  return `We confirmed your ${what} of ${formatBaht(p.amount)}${p.reviewedAt ? ` on ${formatDate(p.reviewedAt)}` : ''}.`
+}
+
 /** An online payment whose Xendit page can still take the payment. */
 const checkoutStillOpen = (p: OrderPayment) =>
   Boolean(p.checkoutUrl && p.checkoutExpiresAt && new Date(p.checkoutExpiresAt) > new Date())
@@ -238,6 +257,7 @@ const checkoutStillOpen = (p: OrderPayment) =>
 function StatusNote({ order, pending }: { order: Order; pending?: OrderPayment }) {
   let text: string | null = null
   let urgent = false
+  let confirmed = false
   const onlineNote =
     pending?.method === 'Xendit' &&
     (checkoutStillOpen(pending)
@@ -253,9 +273,11 @@ function StatusNote({ order, pending }: { order: Order; pending?: OrderPayment }
   } else if (order.status === 'awaiting_deposit') {
     text = onlineNote || 'We are checking your deposit slip.'
   } else if (order.status === 'awaiting_stock') {
-    text = 'Your deposit is confirmed. We will ask for the balance when the stock arrives.'
+    text = `✓ ${confirmedText(order, 'deposit')} We will ask for the balance when the stock arrives.`
+    confirmed = true
   } else if (order.status === 'paid') {
-    text = `Paid in full. ${order.shipDate ? `Planned ship date: ${formatDate(order.shipDate)}.` : 'We will ship it soon.'}`
+    text = `✓ ${confirmedText(order, 'payment')} ${order.shipDate ? `Planned ship date: ${formatDate(order.shipDate)}.` : 'We will ship it soon.'}`
+    confirmed = true
   } else if (order.status === 'cancelled' && order.cancelReason) {
     text = `Cancelled: ${order.cancelReason}`
   }
@@ -267,7 +289,9 @@ function StatusNote({ order, pending }: { order: Order; pending?: OrderPayment }
           ? 'border-primary/40 bg-primary/5 text-sm'
           : order.status === 'cancelled'
             ? 'border-danger/30 bg-danger/5 text-sm text-danger'
-            : 'text-sm'
+            : confirmed
+              ? 'border-success/30 bg-success/5 text-sm'
+              : 'text-sm'
       }
     >
       {text}

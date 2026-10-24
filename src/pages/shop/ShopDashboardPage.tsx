@@ -53,7 +53,9 @@ export default function ShopDashboardPage() {
             <li>Request the boxes you want before the deadline. No payment yet.</li>
             <li>We split the supply fairly between shops, by tier.</li>
             <li>Accept your offer by paying a 30% deposit.</li>
+            <li>We confirm your deposit.</li>
             <li>When stock arrives, pay the balance before the payment deadline.</li>
+            <li>We confirm your payment.</li>
             <li>We ship paid orders.</li>
           </ol>
           <p className="text-xs text-muted-foreground">

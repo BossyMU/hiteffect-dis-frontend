@@ -11,6 +11,7 @@ import { boxes, formatBaht } from '@/utils/format'
 import { useCatalogParams } from './catalog'
 import { cardButton } from './components/cardButton'
 import { ImageBadge, ProductImage } from './components/ProductImage'
+import { payStatus } from './payStatus'
 import { TRACK_STEPS, isMine, preorderState, trackState, type TrackStage } from './preorderState'
 
 const CHIPS: Record<TrackStage, string> = {
@@ -100,6 +101,8 @@ function TrackCard({
   const to = PATHS.preorder(r.id)
   const actionTo = track.action.to === 'order' && order ? PATHS.order(order.id) : to
   const state = { from: location.pathname + location.search }
+  // Paid and being checked, or confirmed until the next payment: shown, but not clickable.
+  const pay = order ? payStatus(order) : null
   const canDecline =
     offer?.status === 'offered' &&
     r.status === 'offering' &&
@@ -175,6 +178,16 @@ function TrackCard({
           />
         </dl>
         <div className="flex w-full gap-2 sm:w-auto">
+          {pay && !pay.enabled && (
+            <button
+              type="button"
+              disabled
+              className={cn(cardButton.disabled, 'flex-1 px-6 sm:w-auto sm:flex-none')}
+            >
+              {pay.confirmed && <span className="text-success">✓ </span>}
+              {pay.label}
+            </button>
+          )}
           {canDecline && (
             <button
               type="button"
@@ -210,38 +223,49 @@ function Fact({ label, value }: { label: string; value: string | number }) {
   )
 }
 
-/** Request → Offer → Deposit → Stock → Balance → Shipped, with the current step lit. */
+/**
+ * Request → Offer → Pay deposit → Deposit confirmed → Stock arrives → Pay balance → Payment confirmed
+ * → Shipped, with the current step lit. Phones show only the current step's name.
+ */
 function Tracker({ current, stopped }: { current: number; stopped: boolean }) {
+  const now = TRACK_STEPS[Math.min(current, TRACK_STEPS.length - 1)]
   return (
-    <ol className="mt-4 grid grid-cols-6 gap-1" aria-label="Progress">
-      {TRACK_STEPS.map((label, i) => {
-        const done = i < current
-        const now = i === current && !stopped
-        const end = i === current && stopped
-        return (
-          <li key={label} className="min-w-0" aria-current={now ? 'step' : undefined}>
-            <div
-              className={cn(
-                'h-1.5 rounded-full',
-                done && 'bg-success',
-                now && 'bg-primary',
-                end && 'bg-muted-foreground/40',
-                !done && !now && !end && 'bg-muted',
-              )}
-            />
-            <p
-              className={cn(
-                'mt-1.5 truncate text-[11px]',
-                now ? 'font-semibold text-foreground' : done ? 'text-success' : 'text-muted-foreground',
-                end && 'line-through',
-              )}
-              title={label}
-            >
-              {label}
-            </p>
-          </li>
-        )
-      })}
-    </ol>
+    <div className="mt-4">
+      <ol className="grid grid-cols-8 gap-1" aria-label="Progress">
+        {TRACK_STEPS.map((label, i) => {
+          const done = i < current
+          const now = i === current && !stopped
+          const end = i === current && stopped
+          return (
+            <li key={label} className="min-w-0" aria-current={now ? 'step' : undefined}>
+              <div
+                className={cn(
+                  'h-1.5 rounded-full',
+                  done && 'bg-success',
+                  now && 'bg-primary',
+                  end && 'bg-muted-foreground/40',
+                  !done && !now && !end && 'bg-muted',
+                )}
+              />
+              <p
+                className={cn(
+                  'mt-1.5 hidden truncate text-[11px] sm:block',
+                  now ? 'font-semibold text-foreground' : done ? 'text-success' : 'text-muted-foreground',
+                  end && 'line-through',
+                )}
+                title={label}
+              >
+                {label}
+              </p>
+            </li>
+          )
+        })}
+      </ol>
+      <p className="mt-1.5 text-[11px] text-muted-foreground sm:hidden">
+        {current >= TRACK_STEPS.length
+          ? 'All steps done'
+          : `Step ${current + 1} of ${TRACK_STEPS.length}: ${now}`}
+      </p>
+    </div>
   )
 }

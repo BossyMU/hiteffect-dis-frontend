@@ -15,6 +15,7 @@ import { OfferModal } from './components/OfferModal'
 import { ImageBadge, ProductImage } from './components/ProductImage'
 import { QtyStepper } from './components/QtyStepper'
 import { ShopTabs } from './components/ShopTabs'
+import { payStatus } from './payStatus'
 import { isTakingRequests, nextDeadline, preorderState } from './preorderState'
 
 /**
@@ -179,26 +180,68 @@ function Action({ round: r, onChanged }: { round: ShopRound; onChanged: (r?: Sho
 
   if (offer?.status === 'accepted') {
     const qty = boxes(offer.acceptedQty ?? offer.offeredQty)
-    const next: Record<string, string> = {
-      offering: 'We are checking your deposit slip.',
-      confirmed: `Your boxes are confirmed. We will ask for the balance when the stock arrives${
-        r.expectedArrival ? ` (expected ${formatDate(r.expectedArrival)})` : ''
-      }.`,
-      balance_due: `The stock has arrived: pay the balance by ${formatDeadline(r.paymentDeadline)}.`,
-      closed: 'This pre-order is complete.',
+    const order = r.myOrder
+    const pay = order ? payStatus(order) : null
+    const on = order?.paymentConfirmedAt ? ` on ${formatDate(order.paymentConfirmedAt)}` : ''
+    // The shop's own order says where it is; the round can be further along for other shops.
+    let text: string
+    let tone: 'success' | 'primary' | 'danger' | 'neutral' = 'success'
+    switch (order?.status) {
+      case 'awaiting_deposit':
+        text = order.paymentPending
+          ? 'We received your deposit and are checking it. We will confirm it soon.'
+          : 'Waiting for your deposit.'
+        tone = 'neutral'
+        break
+      case 'awaiting_stock':
+        text = `We confirmed your deposit${on}. We will ask for the balance when the stock arrives${
+          r.expectedArrival ? ` (expected ${formatDate(r.expectedArrival)})` : ''
+        }.`
+        break
+      case 'pending_payment':
+        text = order.paymentPending
+          ? 'We received your balance payment and are checking it. We will confirm it soon.'
+          : `The stock has arrived: pay the balance of ${formatBaht(order.amountDue)} by ${formatDeadline(
+              order.paymentDueAt ?? r.paymentDeadline,
+            )}.`
+        tone = order.paymentPending ? 'neutral' : 'primary'
+        break
+      case 'paid':
+        text = `We confirmed your payment${on}. We ship ${r.shipDate ? `from ${formatDate(r.shipDate)}` : 'soon'}.`
+        break
+      case 'shipped':
+        text = `Shipped ${formatDate(order.shippedAt)}${order.trackingNo ? ` · tracking ${order.trackingNo}` : ''}.`
+        break
+      case 'cancelled':
+        text = `This order was cancelled${order.cancelReason ? `: ${order.cancelReason}` : ''}.`
+        tone = 'danger'
+        break
+      default:
+        text = r.status === 'closed' ? 'This pre-order is complete.' : ''
     }
     return (
-      <Panel tone={r.status === 'balance_due' ? 'primary' : 'success'}>
+      <Panel tone={tone}>
         <p className="font-semibold text-foreground">You accepted {qty}.</p>
-        <p>{next[r.status] ?? ''}</p>
-        {r.myOrderId && (
-          <Link
-            to={PATHS.order(r.myOrderId)}
-            className={cn(r.status === 'balance_due' ? cardButton.primary : cardButton.outline, 'mt-3')}
-          >
-            {r.status === 'balance_due' ? 'Pay the balance' : 'View order'}
-          </Link>
-        )}
+        {text && <p>{text}</p>}
+        <div className="mt-3 space-y-2">
+          {pay &&
+            r.myOrderId &&
+            (pay.enabled ? (
+              <Link to={PATHS.order(r.myOrderId)} className={cardButton.primary}>
+                Pay the balance
+              </Link>
+            ) : (
+              <button type="button" disabled className={cardButton.disabled}>
+                {pay.confirmed && <span className="text-success">✓ </span>}
+                {pay.label}
+              </button>
+            ))}
+          {r.myOrderId && (
+            <Link to={PATHS.order(r.myOrderId)} className={cardButton.outline}>
+              View order
+            </Link>
+          )}
+        </div>
       </Panel>
     )
   }
@@ -313,12 +356,27 @@ function Panel({
 /** How the pre-order goes, step by step, with the round's dates; the current step is highlighted. */
 function Steps({ round: r }: { round: ShopRound }) {
   const accepted = r.myAllocation?.status === 'accepted'
+  const order = accepted ? r.myOrder : null
+  // A shop with an order follows its own order; otherwise the round's stage.
+  const byOrder: Record<string, number> = {
+    awaiting_deposit: order?.paymentPending ? 3 : 2,
+    awaiting_stock: 4,
+    pending_payment: order?.paymentPending ? 6 : 5,
+    paid: 7,
+    shipped: 8,
+    cancelled: -1,
+  }
+  const byRound: Record<string, number> = {
+    open: 0,
+    allocating: 1,
+    offering: 1,
+    confirmed: 4,
+    balance_due: 5,
+    closed: 8,
+  }
   const current =
-    r.status === 'cancelled'
-      ? -1
-      : ({ open: 0, allocating: 1, offering: accepted ? 2 : 1, confirmed: 3, balance_due: 4, closed: 6 }[
-          r.status as string
-        ] ?? 0)
+    r.status === 'cancelled' ? -1 : order ? (byOrder[order.status] ?? 0) : (byRound[r.status] ?? 0)
+  const checkedBy = 'Slips are checked by hand; online payments right away'
   const steps: [string, string][] = [
     ['Request boxes', r.status === 'open' ? `Until ${formatDeadline(r.requestDeadline)}` : 'Requests closed'],
     [
@@ -328,6 +386,12 @@ function Steps({ round: r }: { round: ShopRound }) {
         : `After requests close; ${Math.round(r.offerWindowHours / 24)} days to accept`,
     ],
     [`Pay the ${r.depositPct}% deposit`, 'When you accept the offer'],
+    [
+      'We confirm your deposit',
+      order?.paymentConfirmedAt && current > 3
+        ? `Confirmed ${formatDate(order.paymentConfirmedAt)}`
+        : checkedBy,
+    ],
     [
       'Stock arrives',
       r.arrivedAt
@@ -340,7 +404,13 @@ function Steps({ round: r }: { round: ShopRound }) {
       `Pay the ${100 - r.depositPct}% balance`,
       r.paymentDeadline ? `By ${formatDeadline(r.paymentDeadline)}` : 'Deadline set when stock arrives',
     ],
-    ['We ship', r.shipDate ? `From ${formatDate(r.shipDate)}` : 'Once the balance is paid'],
+    [
+      'We confirm your payment',
+      order?.paymentConfirmedAt && current > 6
+        ? `Confirmed ${formatDate(order.paymentConfirmedAt)}`
+        : checkedBy,
+    ],
+    ['We ship', r.shipDate ? `From ${formatDate(r.shipDate)}` : 'Once the balance is confirmed'],
   ]
 
   return (

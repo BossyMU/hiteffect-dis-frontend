@@ -251,6 +251,10 @@ export interface ShopRound extends Round {
     trackingNo: string | null
     shippedAt: string | null
     cancelReason: string | null
+    /** A slip is being checked, or an online payment is in progress. */
+    paymentPending: boolean
+    /** When we last confirmed a payment (the deposit, or the balance). */
+    paymentConfirmedAt: string | null
   } | null
 }
 

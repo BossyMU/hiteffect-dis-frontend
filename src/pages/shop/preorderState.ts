@@ -75,6 +75,44 @@ export function preorderState(r: ShopRound): PreorderState {
   if (offer?.status === 'accepted') {
     const qty = boxes(offer.acceptedQty ?? offer.offeredQty)
     const order = { action: r.myOrderId ? 'View order' : 'View details', urgent: false }
+    // The shop's own order says where it is; the round can be further along for other shops.
+    const mine = r.myOrder
+    if (mine?.paymentPending) {
+      const what = mine.status === 'awaiting_deposit' ? 'deposit' : 'payment'
+      return {
+        badge: `Checking ${what}`,
+        badgeTone: 'muted',
+        line: `${qty} · we are checking your ${what}`,
+        ...order,
+      }
+    }
+    switch (mine?.status) {
+      case 'awaiting_stock':
+        return {
+          badge: 'Deposit confirmed',
+          badgeTone: 'success',
+          line: r.expectedArrival ? `${qty} · arrives ~${formatDate(r.expectedArrival)}` : qty,
+          ...order,
+        }
+      case 'pending_payment':
+        return {
+          badge: 'Balance due',
+          badgeTone: 'primary',
+          line: `${qty} · pay by ${formatDate(mine.paymentDueAt ?? r.paymentDeadline)}`,
+          ...order,
+        }
+      case 'paid':
+        return {
+          badge: 'Payment confirmed',
+          badgeTone: 'success',
+          line: r.shipDate ? `${qty} · ships ~${formatDate(r.shipDate)}` : qty,
+          ...order,
+        }
+      case 'shipped':
+        return { badge: 'Shipped', badgeTone: 'muted', line: qty, ...order }
+      case 'cancelled':
+        return { badge: 'Cancelled', badgeTone: 'muted', line: 'Order cancelled', ...order }
+    }
     if (r.status === 'balance_due') {
       return {
         badge: 'Balance due',
@@ -110,14 +148,25 @@ export function nextDeadline(r: ShopRound) {
   if (r.status === 'open') return `Requests close ${formatDeadline(r.requestDeadline)}`
   if (r.myAllocation?.status === 'offered')
     return `Accept by ${formatDeadline(r.myAllocation.offerExpiresAt)}`
-  if (r.status === 'balance_due') return `Balance due ${formatDeadline(r.paymentDeadline)}`
+  const mine = r.myOrder
+  if (mine?.status === 'pending_payment' && !mine.paymentPending)
+    return `Balance due ${formatDeadline(mine.paymentDueAt ?? r.paymentDeadline)}`
   return null
 }
 
 // ─── My pre-orders ──────────────────────────────────────────────────────────
 
 /** The steps every pre-order goes through, shown as a tracker on My pre-orders. */
-export const TRACK_STEPS = ['Request', 'Offer', 'Deposit', 'Stock', 'Balance', 'Shipped'] as const
+export const TRACK_STEPS = [
+  'Request',
+  'Offer',
+  'Pay deposit',
+  'Deposit confirmed',
+  'Stock arrives',
+  'Pay balance',
+  'Payment confirmed',
+  'Shipped',
+] as const
 
 export type TrackStage = 'action' | 'progress' | 'done'
 
@@ -132,6 +181,9 @@ export interface TrackState {
   next: string
   action: { label: string; to: 'preorder' | 'order'; urgent: boolean }
 }
+
+const confirmedOn = (order: { paymentConfirmedAt: string | null }) =>
+  order.paymentConfirmedAt ? ` on ${formatDate(order.paymentConfirmedAt)}` : ''
 
 /** Where a shop's pre-order is, from request to shipping, for the My pre-orders tab. */
 export function trackState(r: ShopRound): TrackState {
@@ -156,7 +208,7 @@ export function trackState(r: ShopRound): TrackState {
       case 'cancelled':
         return {
           stage: 'done',
-          current: order.paidAmount > 0 ? 4 : 2,
+          current: order.paidAmount > 0 ? 5 : 2,
           stopped: true,
           next: `Order cancelled${order.cancelReason ? `: ${order.cancelReason}` : ''}.`,
           action: viewOrder,
@@ -164,39 +216,49 @@ export function trackState(r: ShopRound): TrackState {
       case 'awaiting_deposit':
         return {
           stage: 'progress',
-          current: 2,
+          current: order.paymentPending ? 3 : 2,
           stopped: false,
-          next: 'We are checking your deposit slip.',
+          next: order.paymentPending
+            ? 'We received your deposit and are checking it. We will confirm it soon.'
+            : 'Waiting for your deposit.',
           action: viewOrder,
         }
       case 'awaiting_stock':
         return {
           stage: 'progress',
-          current: 3,
+          current: 4,
           stopped: false,
-          next: `Deposit paid. Waiting for the stock${r.expectedArrival ? `, expected ${formatDate(r.expectedArrival)}` : ''}.`,
+          next: `We confirmed your deposit${confirmedOn(order)}. Waiting for the stock${r.expectedArrival ? `, expected ${formatDate(r.expectedArrival)}` : ''}.`,
           action: viewOrder,
         }
       case 'pending_payment':
-        return {
-          stage: 'action',
-          current: 4,
-          stopped: false,
-          next: `The stock has arrived. Pay the balance by ${formatDeadline(order.paymentDueAt ?? r.paymentDeadline)}.`,
-          action: { label: 'Pay balance', to: 'order', urgent: true },
-        }
+        return order.paymentPending
+          ? {
+              stage: 'progress',
+              current: 6,
+              stopped: false,
+              next: 'We received your balance payment and are checking it. We will confirm it soon.',
+              action: viewOrder,
+            }
+          : {
+              stage: 'action',
+              current: 5,
+              stopped: false,
+              next: `The stock has arrived. Pay the balance by ${formatDeadline(order.paymentDueAt ?? r.paymentDeadline)}.`,
+              action: { label: 'Pay balance', to: 'order', urgent: true },
+            }
       case 'paid':
         return {
           stage: 'progress',
-          current: 5,
+          current: 7,
           stopped: false,
-          next: `Paid in full. We ship ${r.shipDate ? `from ${formatDate(r.shipDate)}` : 'soon'}.`,
+          next: `We confirmed your payment${confirmedOn(order)}. We ship ${r.shipDate ? `from ${formatDate(r.shipDate)}` : 'soon'}.`,
           action: viewOrder,
         }
       case 'shipped':
         return {
           stage: 'done',
-          current: 6,
+          current: 8,
           stopped: false,
           next: `Shipped ${formatDate(order.shippedAt)}${order.trackingNo ? ` · tracking ${order.trackingNo}` : ''}.`,
           action: viewOrder,

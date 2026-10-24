@@ -102,15 +102,15 @@ function nextStep(o: Order) {
   const slipPending = o.payments.some((p) => p.status === 'pending')
   switch (o.status) {
     case 'awaiting_deposit':
-      return 'We are checking your deposit slip'
+      return slipPending ? 'We are checking your deposit' : 'Waiting for your deposit'
     case 'awaiting_stock':
-      return 'Waiting for the stock to arrive'
+      return '✓ Deposit confirmed · waiting for the stock'
     case 'pending_payment':
       return slipPending
-        ? 'We are checking your slip'
+        ? 'We are checking your payment'
         : `Pay ${formatBaht(o.amountDue)} by ${formatDeadline(o.paymentDueAt)}`
     case 'paid':
-      return o.shipDate ? `Ships around ${formatDate(o.shipDate)}` : 'Being packed'
+      return `✓ Payment confirmed · ${o.shipDate ? `ships around ${formatDate(o.shipDate)}` : 'being packed'}`
     case 'shipped':
       return o.trackingNo ? `Tracking ${o.trackingNo}` : `Shipped ${formatDate(o.shippedAt)}`
     default:
