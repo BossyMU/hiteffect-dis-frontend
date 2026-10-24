@@ -17,7 +17,12 @@ import {
   TableRow,
   TextArea,
 } from '@/components/ui'
-import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL, PAYMENT_STATUS } from '@/constants/status'
+import {
+  PAYMENT_KIND_LABEL,
+  PAYMENT_METHOD_LABEL,
+  PAYMENT_STATUS,
+  paymentStatusStyle,
+} from '@/constants/status'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import type { Payment, PaymentStatus } from '@/types'
@@ -214,8 +219,9 @@ function ReviewModal({
         />
         {payment.status !== 'pending' && (
           <p className="text-sm text-muted-foreground">
-            {PAYMENT_STATUS[payment.status].label} {formatDateTime(payment.reviewedAt)} by{' '}
-            {payment.reviewedBy}
+            {paymentStatusStyle(payment.status, online).label} {formatDateTime(payment.reviewedAt)}
+            {/* Xendit settles online payments; an admin only when closing one by hand. */}
+            {payment.reviewedBy ? ` by ${payment.reviewedBy}` : online ? ' by Xendit' : ''}
             {payment.rejectReason && `: ${payment.rejectReason}`}
           </p>
         )}

@@ -137,7 +137,16 @@ export function OrderPaymentsTable({ payments }: { payments: OrderPayment[] }) {
           </TableCell>
           <TableCell className={cell}>
             <PaymentStatusBadge status={p.status} online={p.method === 'Xendit'} />
-            {p.rejectReason && <p className="mt-1 text-xs text-danger">{p.rejectReason}</p>}
+            {p.rejectReason && (
+              <p
+                className={cn(
+                  'mt-1 text-xs',
+                  p.method === 'Xendit' ? 'text-muted-foreground' : 'text-danger',
+                )}
+              >
+                {p.rejectReason}
+              </p>
+            )}
           </TableCell>
           <TableCell className={cn(cell, 'text-right font-mono whitespace-nowrap')}>
             {formatBaht(p.amount)}

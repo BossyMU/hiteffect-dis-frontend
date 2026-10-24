@@ -1,8 +1,7 @@
 import {
   ALLOCATION_STATUS,
-  ONLINE_PENDING,
   ORDER_STATUS,
-  PAYMENT_STATUS,
+  paymentStatusStyle,
   ROUND_STATUS,
   USER_STATUS,
 } from '@/constants/status'
@@ -44,7 +43,7 @@ export const OrderStatusBadge = ({ status }: { status: OrderStatus }) => (
   <Badge tone={ORDER_STATUS[status].tone}>{ORDER_STATUS[status].label}</Badge>
 )
 
-/** `online`: an online payment, which shows "Paying online" instead of "To check" while open. */
+/** `online`: an online payment, which reads "Paying online" while open and "Not completed" if unpaid. */
 export const PaymentStatusBadge = ({
   status,
   online = false,
@@ -52,7 +51,7 @@ export const PaymentStatusBadge = ({
   status: PaymentStatus
   online?: boolean
 }) => {
-  const style = online && status === 'pending' ? ONLINE_PENDING : PAYMENT_STATUS[status]
+  const style = paymentStatusStyle(status, online)
   return <Badge tone={style.tone}>{style.label}</Badge>
 }
 

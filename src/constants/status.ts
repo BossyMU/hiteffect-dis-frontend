@@ -103,6 +103,21 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 /** An online payment that is still open shows this instead of "To check". */
 export const ONLINE_PENDING: StatusStyle = { label: 'Paying online', tone: 'warning' }
 
+/**
+ * An online payment whose Xendit page closed without a payment (time ran out, the attempt failed,
+ * or an admin closed it after the page expired) shows this instead of "Rejected": nothing was
+ * charged, and the shop can pay again if the deadline allows.
+ */
+export const ONLINE_NOT_COMPLETED: StatusStyle = { label: 'Not completed', tone: 'neutral' }
+
+/** How a payment's status reads: online payments have their own words for open and unfinished. */
+export const paymentStatusStyle = (status: PaymentStatus, online: boolean): StatusStyle =>
+  online && status === 'pending'
+    ? ONLINE_PENDING
+    : online && status === 'rejected'
+      ? ONLINE_NOT_COMPLETED
+      : PAYMENT_STATUS[status]
+
 export const USER_STATUS: Record<UserStatus, StatusStyle> = {
   pending: { label: 'Waiting for approval', tone: 'warning' },
   approved: { label: 'Active', tone: 'success' },
