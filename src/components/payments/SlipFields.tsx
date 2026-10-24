@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Field, Select, TextInput } from '@/components/ui'
-import { PAYMENT_DETAILS } from '@/constants/company'
+import { PaymentDetails } from './PaymentDetails'
 import { PAYMENT_METHODS } from '@/constants/status'
 import type { SlipMethod, SlipUpload } from '@/types'
 import { formatBaht } from '@/utils/format'
@@ -12,7 +12,7 @@ interface SlipFieldsProps {
   onChange: (slip: SlipUpload | null) => void
 }
 
-/** "Pay ฿X to …", payment method, transfer reference and the slip image (shrunk before upload). */
+/** Where to pay (PromptPay QR and bank account), payment method, transfer reference and the slip image (shrunk before upload). */
 export function SlipFields({ amount, onChange }: SlipFieldsProps) {
   const [method, setMethod] = useState<SlipMethod>('PromptPay')
   const [reference, setReference] = useState('')
@@ -40,17 +40,11 @@ export function SlipFields({ amount, onChange }: SlipFieldsProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-        <p>
-          Transfer <span className="font-mono font-semibold">{formatBaht(amount)}</span>, then attach the
-          slip.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {method === 'PromptPay'
-            ? `PromptPay: ${PAYMENT_DETAILS.promptPay}`
-            : `${PAYMENT_DETAILS.bankName} ${PAYMENT_DETAILS.bankAccount} · ${PAYMENT_DETAILS.accountName}`}
-        </p>
-      </div>
+      <p className="text-sm">
+        Pay <span className="font-mono font-semibold">{formatBaht(amount)}</span> by PromptPay or bank
+        transfer, then attach the slip below.
+      </p>
+      <PaymentDetails amount={amount} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Paid by" htmlFor="slip-method">
           <Select id="slip-method" value={method} onChange={(e) => setMethod(e.target.value as SlipMethod)}>
