@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { shopApi } from '@/api'
 import { FilterBar, FilterChip, LoadState, PageHeader } from '@/components/ui'
+import { useToast } from '@/context/ToastContext'
 import { PATHS } from '@/routes/paths'
 import { useApiData } from '@/hooks/useApiData'
 import type { ShopRound } from '@/types'
 import { cn } from '@/utils/cn'
-import { formatBaht } from '@/utils/format'
+import { boxes, formatBaht } from '@/utils/format'
 import { useCatalogParams } from './catalog'
 import { cardButton } from './components/cardButton'
 import { ImageBadge, ProductImage } from './components/ProductImage'
@@ -71,7 +72,7 @@ export default function MyPreordersPage() {
         ) : (
           <ul className="space-y-4">
             {shown.map(({ round, track }) => (
-              <TrackCard key={round.id} round={round} track={track} />
+              <TrackCard key={round.id} round={round} track={track} onChanged={() => void reload()} />
             ))}
           </ul>
         )}
@@ -80,8 +81,18 @@ export default function MyPreordersPage() {
   )
 }
 
-function TrackCard({ round: r, track }: { round: ShopRound; track: ReturnType<typeof trackState> }) {
+function TrackCard({
+  round: r,
+  track,
+  onChanged,
+}: {
+  round: ShopRound
+  track: ReturnType<typeof trackState>
+  onChanged: () => void
+}) {
   const location = useLocation()
+  const { run } = useToast()
+  const [declining, setDeclining] = useState(false)
   const badge = preorderState(r)
   const asked = r.myPreorder?.status === 'submitted' ? r.myPreorder.requestedQty : null
   const offer = r.myAllocation
@@ -89,6 +100,19 @@ function TrackCard({ round: r, track }: { round: ShopRound; track: ReturnType<ty
   const to = PATHS.preorder(r.id)
   const actionTo = track.action.to === 'order' && order ? PATHS.order(order.id) : to
   const state = { from: location.pathname + location.search }
+  const canDecline =
+    offer?.status === 'offered' &&
+    r.status === 'offering' &&
+    (!offer.offerExpiresAt || new Date(offer.offerExpiresAt) > new Date())
+
+  async function decline() {
+    if (!offer) return
+    if (!window.confirm(`Decline your offer of ${boxes(offer.offeredQty)}? This cannot be undone.`)) return
+    setDeclining(true)
+    const ok = await run(() => shopApi.declineOffer(offer.id), 'Offer declined')
+    setDeclining(false)
+    if (ok) onChanged()
+  }
 
   return (
     <li
@@ -150,16 +174,28 @@ function TrackCard({ round: r, track }: { round: ShopRound; track: ReturnType<ty
             }
           />
         </dl>
-        <Link
-          to={actionTo}
-          state={state}
-          className={cn(
-            track.action.urgent ? cardButton.primary : cardButton.outline,
-            'w-full px-6 sm:w-auto',
+        <div className="flex w-full gap-2 sm:w-auto">
+          {canDecline && (
+            <button
+              type="button"
+              disabled={declining}
+              onClick={() => void decline()}
+              className={cn(cardButton.outline, 'flex-1 px-6 sm:w-auto sm:flex-none')}
+            >
+              {declining ? 'Declining…' : 'Decline'}
+            </button>
           )}
-        >
-          {track.action.label}
-        </Link>
+          <Link
+            to={actionTo}
+            state={state}
+            className={cn(
+              track.action.urgent ? cardButton.primary : cardButton.outline,
+              'flex-1 px-6 sm:w-auto sm:flex-none',
+            )}
+          >
+            {track.action.label}
+          </Link>
+        </div>
       </div>
     </li>
   )
