@@ -5,11 +5,14 @@ import { CatalogCard } from './CatalogCard'
 import { cardButton } from './cardButton'
 import { ImageBadge, ProductImage } from './ProductImage'
 import { QtyStepper } from './QtyStepper'
-import { isTakingRequests } from '../preorderState'
 
 /**
  * A product in the Products tab. The photo and name open the product page; the button adds a box
  * to the cart, then becomes a − / + stepper. Sold-out products can't be added.
+ *
+ * No pre-order tag here, even when the next shipment is on pre-order: everything on this tab is
+ * bought from stock, and a tag made shops think they were pre-ordering. The product page mentions
+ * the pre-order instead.
  */
 export function ProductCard({ product: p }: { product: ShopProduct }) {
   const cart = useCart()
@@ -23,7 +26,6 @@ export function ProductCard({ product: p }: { product: ShopProduct }) {
       image={
         <ProductImage src={p.imageUrl} alt={p.name} setCode={p.setCode} game={p.game} hoverZoom>
           {soldOut && <ImageBadge tone="muted">Sold out</ImageBadge>}
-          {p.activeRound && isTakingRequests(p.activeRound) && <ImageBadge>Pre-order open</ImageBadge>}
         </ProductImage>
       }
       sku={p.sku}

@@ -81,9 +81,11 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
 
       {p.activeRound && isTakingRequests(p.activeRound) && (
         <p className="rounded-lg border border-ring/40 bg-ring/5 px-4 py-3 text-sm">
-          More of this product is on pre-order.{' '}
+          {soldOut
+            ? 'Sold out for now. The next shipment is open for pre-order requests: '
+            : 'You are ordering boxes we have in stock now. Separately, the next shipment is open for pre-order requests: '}
           <Link to={PATHS.preorder(p.activeRound.id)} className="font-semibold text-info hover:underline">
-            See the pre-order →
+            see the pre-order →
           </Link>
         </p>
       )}
