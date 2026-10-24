@@ -99,7 +99,10 @@ export function OfferModal({
             <span>Deposit now ({round.depositPct}%)</span>
             <span className="font-mono text-primary-strong">{validQty ? formatBaht(deposit) : '—'}</span>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">The balance is due when the stock arrives.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            The balance is due when the stock arrives, with shipping (Thailand Post EMS plus a 7% service fee)
+            added to it.
+          </p>
         </div>
         {online && <PayMethodChoice value={payBy} onChange={setPicked} />}
         {payBy === 'online' ? (

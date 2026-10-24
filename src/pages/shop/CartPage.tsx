@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { shopApi } from '@/api'
+import { errorMessage, shopApi } from '@/api'
+import { ShippingBreakdown } from '@/components/orders'
 import { Button, Card, Field, LoadState, PageHeader, TextArea } from '@/components/ui'
 import { orderLimit, useCart, type CartLine } from '@/context/CartContext'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
-import type { ShopProduct, ShopRound } from '@/types'
+import type { ShippingQuote, ShopProduct, ShopRound } from '@/types'
 import { boxes, formatBaht, formatDate } from '@/utils/format'
+import { shippingSummary } from '@/utils/shipping'
 import { ProductImage } from './components/ProductImage'
 import { QtyStepper } from './components/QtyStepper'
 import { ShopTabs } from './components/ShopTabs'
@@ -41,7 +43,10 @@ export default function CartPage() {
   }, [cart.lines, data])
   const orderable = checked.filter((c) => c.product && c.qty > 0)
   const count = orderable.reduce((s, c) => s + c.qty, 0)
-  const total = orderable.reduce((s, c) => s + c.qty * c.product!.price, 0)
+  const goods = orderable.reduce((s, c) => s + c.qty * c.product!.price, 0)
+  const itemsKey = JSON.stringify(orderable.map((c) => ({ productId: c.product!.id, qty: c.qty })))
+  const shipping = useShippingQuote(count > 0 ? itemsKey : null)
+  const total = goods + (shipping?.quote?.total ?? 0)
   const requests = (data?.[1] ?? []).filter(
     (r) => r.status === 'open' && r.myPreorder?.status === 'submitted',
   )
@@ -91,13 +96,50 @@ export default function CartPage() {
             </ul>
 
             <Card className="space-y-4 self-start lg:sticky lg:top-6">
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm text-muted-foreground">{boxes(count)}</span>
+              <dl className="space-y-1.5 text-sm">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Goods · {boxes(count)}</dt>
+                  <dd className="font-mono">{formatBaht(goods)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">
+                    Shipping
+                    {shipping?.quote && (
+                      <span className="block text-xs">{shippingSummary(shipping.quote)}</span>
+                    )}
+                  </dt>
+                  <dd className="font-mono">
+                    {count === 0
+                      ? '—'
+                      : shipping == null
+                        ? 'Calculating…'
+                        : shipping.quote
+                          ? formatBaht(shipping.quote.total)
+                          : '—'}
+                  </dd>
+                </div>
+              </dl>
+              {shipping?.error && <p className="text-sm text-danger">{shipping.error}</p>}
+              <div className="flex items-baseline justify-between border-t border-border pt-3">
+                <span className="text-sm font-medium">Total</span>
                 <span className="font-mono text-2xl font-semibold text-primary-strong">
-                  {formatBaht(total)}
+                  {shipping == null && count > 0 ? '…' : formatBaht(total)}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">Total before VAT.</p>
+              <p className="text-xs text-muted-foreground">
+                Before VAT. Shipping is Thailand Post EMS plus a {shipping?.quote?.serviceFeePct ?? 7}%
+                service fee.
+              </p>
+              {shipping?.quote && <ShippingBreakdown quote={shipping.quote} />}
+              {shipping?.quote && !shipping.quote.postcode && (
+                <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+                  Your address has no postcode, so we can't check for a remote-area surcharge.{' '}
+                  <Link to={PATHS.profile} className="font-semibold text-info hover:underline">
+                    Add it in your profile
+                  </Link>
+                  .
+                </p>
+              )}
               <Field label="Note (optional)" htmlFor="order-note">
                 <TextArea id="order-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
               </Field>
@@ -120,6 +162,34 @@ export default function CartPage() {
       </LoadState>
     </div>
   )
+}
+
+/**
+ * The shipping quote for the cart, asked again (after a short pause) whenever the boxes change.
+ * Null while it's being worked out; `key` is the cart's items as JSON, or null when there are none.
+ */
+function useShippingQuote(key: string | null) {
+  const [result, setResult] = useState<{
+    key: string
+    quote: ShippingQuote | null
+    error: string | null
+  } | null>(null)
+  useEffect(() => {
+    if (!key) return
+    let live = true
+    const timer = setTimeout(() => {
+      shopApi.shippingQuote(JSON.parse(key)).then(
+        (quote) => live && setResult({ key, quote, error: null }),
+        (err: unknown) => live && setResult({ key, quote: null, error: errorMessage(err) }),
+      )
+    }, 250)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+  }, [key])
+  // An answer for other boxes than these is out of date: still working it out.
+  return result && result.key === key ? result : null
 }
 
 function CartRow({

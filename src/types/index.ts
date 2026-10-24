@@ -72,6 +72,8 @@ export interface Product {
   stockReserved: number
   available: number
   maxPerOrder: number | null
+  /** Weight of one box, for shipping. Null: the backend's default (1 kg). */
+  weightGrams: number | null
   isListed: boolean
   createdAt: string
   tierPrices: TierPrice[]
@@ -248,6 +250,8 @@ export interface ShopRound extends Round {
     orderNo: string
     status: OrderStatus
     subtotal: number
+    /** Added with the balance when the stock arrives; 0 until then. */
+    shippingFee: number
     depositAmount: number
     paidAmount: number
     amountDue: number
@@ -309,10 +313,19 @@ export interface Order {
   roundTitle: string | null
   allocationId: string | null
   status: OrderStatus
+  /** The goods. */
   subtotal: number
+  /** EMS shipping with the service fee. Pre-orders: 0 until the stock arrives. */
+  shippingFee: number
+  /** How shipping was worked out; null while there is none yet. */
+  shippingDetail: ShippingQuote | null
+  /** subtotal + shippingFee: what the shop pays in full. */
+  total: number
+  /** Pre-orders: the deposit, on the goods only. */
   depositAmount: number
   paidAmount: number
   refundDue: number
+  /** total − paid. */
   amountDue: number
   paymentDueAt: string | null
   shipAddress: string
@@ -351,7 +364,35 @@ export interface Payment {
 export interface PaymentDetail extends Payment {
   slipImage: string
   orderSubtotal: number
+  orderShippingFee: number
   orderPaidAmount: number
+}
+
+/** One EMS parcel: how many boxes, its weight with packaging, and its postage. */
+export interface ShippingParcel {
+  boxes: number
+  grams: number
+  postage: number
+}
+
+/** What shipping costs: Thailand Post EMS for the parcels, plus our service fee. */
+export interface ShippingQuote {
+  carrier: string
+  /** From the shop's address; decides the remote-area surcharge. */
+  postcode: string | null
+  remote: boolean
+  totalGrams: number
+  parcels: ShippingParcel[]
+  postage: number
+  fuelSurcharge: number
+  remoteSurcharge: number
+  /** postage + surcharges: what Thailand Post charges. */
+  carrierCost: number
+  serviceFeePct: number
+  serviceFee: number
+  total: number
+  /** Some product has no weight set, so the default box weight was used. */
+  defaultWeightUsed: boolean
 }
 
 /** What a shop sends with a deposit, balance or full payment. */

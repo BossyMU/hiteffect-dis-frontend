@@ -201,9 +201,9 @@ function Action({ round: r, onChanged }: { round: ShopRound; onChanged: (r?: Sho
       case 'pending_payment':
         text = order.paymentPending
           ? 'We received your balance payment and are checking it. We will confirm it soon.'
-          : `The stock has arrived: pay the balance of ${formatBaht(order.amountDue)} by ${formatDeadline(
-              order.paymentDueAt ?? r.paymentDeadline,
-            )}.`
+          : `The stock has arrived: pay the balance of ${formatBaht(order.amountDue)}${
+              order.shippingFee > 0 ? `, which includes ${formatBaht(order.shippingFee)} shipping,` : ''
+            } by ${formatDeadline(order.paymentDueAt ?? r.paymentDeadline)}.`
         tone = order.paymentPending ? 'neutral' : 'primary'
         break
       case 'paid':
@@ -401,7 +401,7 @@ function Steps({ round: r }: { round: ShopRound }) {
           : 'Date to be confirmed',
     ],
     [
-      `Pay the ${100 - r.depositPct}% balance`,
+      `Pay the ${100 - r.depositPct}% balance and shipping`,
       r.paymentDeadline ? `By ${formatDeadline(r.paymentDeadline)}` : 'Deadline set when stock arrives',
     ],
     [

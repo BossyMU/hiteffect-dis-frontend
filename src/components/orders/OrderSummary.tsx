@@ -4,6 +4,8 @@ import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL } from '@/constants/status'
 import type { Order, OrderPayment } from '@/types'
 import { cn } from '@/utils/cn'
 import { formatBaht, formatDateTime, formatDeadline } from '@/utils/format'
+import { shippingSummary } from '@/utils/shipping'
+import { ShippingBreakdown } from './ShippingBreakdown'
 
 /** Tighter cells on phones, so the Amount column stays on screen. */
 const cell = 'px-3 sm:px-4'
@@ -23,54 +25,75 @@ export function OrderBadges({ order }: { order: Order }) {
 /**
  * The order's items, with the money below them in the same table: every amount sits in the
  * Amount column, right-aligned, so the totals line up with the lines they add up.
+ * Goods + shipping = total; a pre-order's deposit is on the goods, and its shipping comes with the balance.
  */
 export function OrderItemsTable({ order }: { order: Order }) {
+  const shipping = order.shippingDetail
+  // A pre-order is charged shipping when its stock arrives, once the final number of boxes is known.
+  const shippingLater = !shipping && order.type === 'preorder' && order.status !== 'cancelled'
   return (
-    <DataTable
-      headers={[
-        { label: 'Product', className: cell },
-        { label: 'Boxes', align: 'right', className: cn(cell, wide) },
-        { label: 'Price', align: 'right', className: cn(cell, wide) },
-        { label: 'Amount', align: 'right', className: cell },
-      ]}
-      footer={
-        <>
-          <TotalRow label="Subtotal (before VAT)" value={order.subtotal} />
-          {order.type === 'preorder' && order.depositAmount > 0 && (
-            <TotalRow label="Deposit" value={order.depositAmount} muted />
-          )}
-          <TotalRow label="Paid so far" value={order.paidAmount} muted />
-          {order.status === 'pending_payment' && (
-            <TotalRow
-              label="To pay"
-              value={order.amountDue}
-              note={`by ${formatDeadline(order.paymentDueAt)}`}
-              strong
-            />
-          )}
-          {order.refundDue > 0 && <TotalRow label="Refund due to you" value={order.refundDue} strong />}
-        </>
-      }
-    >
-      {order.items.map((i) => (
-        <TableRow key={i.productId}>
-          <TableCell className={cell}>
-            <p className="font-medium">{i.productName}</p>
-            <p className="font-mono text-xs text-muted-foreground">{i.sku}</p>
-            <p className="mt-0.5 font-mono text-xs text-muted-foreground sm:hidden">
-              {i.qty} × {formatBaht(i.unitPrice)}
-            </p>
-          </TableCell>
-          <TableCell className={cn(cell, wide, 'text-right font-mono')}>{i.qty}</TableCell>
-          <TableCell className={cn(cell, wide, 'text-right font-mono whitespace-nowrap')}>
-            {formatBaht(i.unitPrice)}
-          </TableCell>
-          <TableCell className={cn(cell, 'text-right font-mono font-semibold whitespace-nowrap')}>
-            {formatBaht(i.qty * i.unitPrice)}
-          </TableCell>
-        </TableRow>
-      ))}
-    </DataTable>
+    <div className="space-y-2">
+      <DataTable
+        headers={[
+          { label: 'Product', className: cell },
+          { label: 'Boxes', align: 'right', className: cn(cell, wide) },
+          { label: 'Price', align: 'right', className: cn(cell, wide) },
+          { label: 'Amount', align: 'right', className: cell },
+        ]}
+        footer={
+          <>
+            <TotalRow label="Subtotal (before VAT)" value={order.subtotal} />
+            {shipping && (
+              <>
+                <TotalRow label="Shipping" value={order.shippingFee} note={shippingSummary(shipping)} />
+                <TotalRow label="Total" value={order.total} />
+              </>
+            )}
+            {shippingLater && (
+              <TotalRow
+                label="Shipping"
+                value={null}
+                note="added with the balance when the stock arrives"
+                muted
+              />
+            )}
+            {order.type === 'preorder' && order.depositAmount > 0 && (
+              <TotalRow label="Deposit" value={order.depositAmount} muted />
+            )}
+            <TotalRow label="Paid so far" value={order.paidAmount} muted />
+            {order.status === 'pending_payment' && (
+              <TotalRow
+                label="To pay"
+                value={order.amountDue}
+                note={`by ${formatDeadline(order.paymentDueAt)}`}
+                strong
+              />
+            )}
+            {order.refundDue > 0 && <TotalRow label="Refund due to you" value={order.refundDue} strong />}
+          </>
+        }
+      >
+        {order.items.map((i) => (
+          <TableRow key={i.productId}>
+            <TableCell className={cell}>
+              <p className="font-medium">{i.productName}</p>
+              <p className="font-mono text-xs text-muted-foreground">{i.sku}</p>
+              <p className="mt-0.5 font-mono text-xs text-muted-foreground sm:hidden">
+                {i.qty} × {formatBaht(i.unitPrice)}
+              </p>
+            </TableCell>
+            <TableCell className={cn(cell, wide, 'text-right font-mono')}>{i.qty}</TableCell>
+            <TableCell className={cn(cell, wide, 'text-right font-mono whitespace-nowrap')}>
+              {formatBaht(i.unitPrice)}
+            </TableCell>
+            <TableCell className={cn(cell, 'text-right font-mono font-semibold whitespace-nowrap')}>
+              {formatBaht(i.qty * i.unitPrice)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </DataTable>
+      {shipping && <ShippingBreakdown quote={shipping} className="px-1" />}
+    </div>
   )
 }
 
@@ -82,7 +105,8 @@ function TotalRow({
   strong,
 }: {
   label: string
-  value: number
+  /** Null: shown as a dash (not known yet). */
+  value: number | null
   note?: ReactNode
   muted?: boolean
   strong?: boolean
@@ -110,7 +134,7 @@ function TotalRow({
           strong ? 'font-semibold text-primary-strong' : muted ? 'text-muted-foreground' : 'font-semibold',
         )}
       >
-        {formatBaht(value)}
+        {value == null ? '—' : formatBaht(value)}
       </td>
     </tr>
   )

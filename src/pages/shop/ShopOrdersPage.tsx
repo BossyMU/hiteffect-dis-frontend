@@ -84,7 +84,7 @@ export default function ShopOrdersPage() {
                   {o.type === 'preorder' ? 'Pre-order' : 'Regular'}
                 </p>
               </TableCell>
-              <TableCell className="font-mono font-semibold">{formatBaht(o.subtotal)}</TableCell>
+              <TableCell className="font-mono font-semibold">{formatBaht(o.total)}</TableCell>
               <TableCell>
                 <OrderStatusBadge status={o.status} />
               </TableCell>

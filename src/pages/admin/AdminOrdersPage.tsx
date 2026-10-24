@@ -112,7 +112,7 @@ export default function AdminOrdersPage() {
                   {boxes(o.items.reduce((s, i) => s + i.qty, 0))}
                 </p>
               </TableCell>
-              <TableCell className="font-mono font-semibold">{formatBaht(o.subtotal)}</TableCell>
+              <TableCell className="font-mono font-semibold">{formatBaht(o.total)}</TableCell>
               <TableCell className="font-mono text-xs">{formatBaht(o.paidAmount)}</TableCell>
               <TableCell>
                 <OrderStatusBadge status={o.status} />

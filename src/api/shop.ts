@@ -3,6 +3,7 @@ import type {
   OnlineCheckout,
   Order,
   PaymentOptions,
+  ShippingQuote,
   ShopDashboard,
   ShopProduct,
   ShopRound,
@@ -41,6 +42,8 @@ export const shopApi = {
 
   orders: () => request<Order[]>('/shop/orders'),
   order: (id: string) => request<Order>(`/shop/orders/${id}`),
+  shippingQuote: (items: { productId: string; qty: number }[]) =>
+    request<ShippingQuote>('/shop/shipping-quote', { method: 'POST', body: { items } }),
   placeOrder: (items: { productId: string; qty: number }[], note: string) =>
     request<Order>('/shop/orders', { method: 'POST', body: { items, note } }),
   cancelOrder: (id: string) => request<Order>(`/shop/orders/${id}/cancel`, { method: 'POST' }),

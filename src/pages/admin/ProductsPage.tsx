@@ -19,6 +19,7 @@ import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import type { NewProduct, Product, Tier } from '@/types'
 import { formatBaht, formatDateTime } from '@/utils/format'
+import { formatWeight } from '@/utils/shipping'
 
 const CATEGORY_SUGGESTIONS = ['Booster Box', 'Decks', 'Box Set', 'Bundle', 'Accessories']
 
@@ -68,6 +69,7 @@ export default function ProductsPage() {
                   {p.setCode && ` · ${p.setCode}`}
                   {p.category && ` · ${p.category}`}
                   {p.tierPrices.length > 0 && ' · tier prices'}
+                  {p.weightGrams ? ` · ${formatWeight(p.weightGrams)}/box` : ' · weight not set'}
                 </p>
               </TableCell>
               <TableCell className="font-mono">{formatBaht(p.basePrice)}</TableCell>
@@ -140,6 +142,7 @@ function ProductModal({
     releaseDate: product?.releaseDate ?? '',
     basePrice: product ? String(product.basePrice) : '',
     maxPerOrder: product?.maxPerOrder != null ? String(product.maxPerOrder) : '',
+    weightGrams: product?.weightGrams != null ? String(product.weightGrams) : '',
     isListed: product?.isListed ?? true,
   })
   const [tierPrices, setTierPrices] = useState<Record<number, string>>(
@@ -158,6 +161,11 @@ function ProductModal({
     if (!form.name.trim()) e.name = 'Required'
     if (!(Number(form.basePrice) >= 0) || form.basePrice === '') e.basePrice = 'Enter a price'
     if (form.imageUrl && !/^https?:\/\//.test(form.imageUrl)) e.imageUrl = 'A full https:// link'
+    if (
+      form.weightGrams.trim() !== '' &&
+      !(Number(form.weightGrams) >= 1 && Number(form.weightGrams) <= 30000)
+    )
+      e.weightGrams = 'Between 1 and 30,000 g'
     if (Object.keys(e).length) return setErrors(e)
 
     const optionalInt = (v: string) => (v.trim() === '' ? null : Math.max(1, Math.floor(Number(v))))
@@ -173,6 +181,7 @@ function ProductModal({
       releaseDate: form.releaseDate || null,
       basePrice: Number(form.basePrice),
       maxPerOrder: optionalInt(form.maxPerOrder),
+      weightGrams: optionalInt(form.weightGrams),
       isListed: form.isListed,
       tierPrices: Object.entries(tierPrices)
         .filter(([, v]) => v.trim() !== '' && Number(v) >= 0)
@@ -264,6 +273,22 @@ function ProductModal({
             min={1}
             value={form.maxPerOrder}
             onChange={(e) => set('maxPerOrder')(e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Weight per box (grams)"
+          htmlFor="p-weight"
+          error={errors.weightGrams}
+          hint="For EMS shipping. Empty = 1 kg"
+        >
+          <TextInput
+            id="p-weight"
+            type="number"
+            min={1}
+            max={30000}
+            value={form.weightGrams}
+            onChange={(e) => set('weightGrams')(e.target.value)}
+            placeholder="1000"
           />
         </Field>
         <Field label="Image link" htmlFor="p-image" error={errors.imageUrl} className="sm:col-span-2">
