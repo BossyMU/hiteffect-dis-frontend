@@ -31,7 +31,7 @@ npm run dev              # http://localhost:5173
 
 Log in with the admin from the backend's `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). With the backend's demo data, you can also log in as `gold.shop@example.com`, `silver.shop@example.com` or `bronze.shop@example.com` (password `shop-demo-123`).
 
-**Before going live,** put your real PromptPay ID (mobile number or 13-digit tax ID) and bank details in `src/constants/company.ts`. Every slip payment shows them: a PromptPay QR code with the amount already filled in (`src/utils/promptpay.ts`, the Thai QR Payment format, same output as the `promptpay-qr` package) and the bank account with copy buttons.
+**Before going live,** put your real PromptPay ID (mobile number or 13-digit tax ID) and bank details in `src/constants/company.ts` and set `testOnly` to `false`. For now it has test details that can't receive money, and the payment window says so. Every slip payment shows them: a PromptPay QR code with the amount already filled in (`src/utils/promptpay.ts`, the Thai QR Payment format, same output as the `promptpay-qr` package) and the bank account with copy buttons.
 
 | Variable            | Default                               | What it is                                        |
 | ------------------- | ------------------------------------- | ------------------------------------------------- |
