@@ -326,14 +326,19 @@ function ProductModal({
             ))}
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            checked={form.isListed}
-            onChange={(e) => set('isListed')(e.target.checked)}
-          />
-          Show in the shops' Stock page (regular orders)
-        </label>
+        <div className="sm:col-span-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.isListed}
+              onChange={(e) => set('isListed')(e.target.checked)}
+            />
+            List on the shops' Products page (regular orders)
+          </label>
+          <p className="mt-1 ml-6 text-xs text-muted-foreground">
+            Untick for a pre-order-only product. Its pre-order rounds still show on the Pre-orders tab.
+          </p>
+        </div>
       </div>
     </Modal>
   )
