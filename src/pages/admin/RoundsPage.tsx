@@ -18,6 +18,7 @@ import { PATHS } from '@/routes/paths'
 import type { AdminRound, RoundStatus } from '@/types'
 import { formatDate, formatDeadline } from '@/utils/format'
 import { RoundFormModal } from './components/RoundFormModal'
+import { supplyView } from './supply'
 
 /** The date that matters next for a round. */
 function nextDate(r: AdminRound) {
@@ -66,7 +67,7 @@ export default function RoundsPage() {
       </FilterBar>
       <LoadState status={status} error={error} onRetry={reload}>
         <DataTable
-          headers={['Round', 'Status', 'Supply', 'Requested', 'Offered', 'Accepted', 'Next']}
+          headers={['Round', 'Status', 'Supply', 'Left', 'Requested', 'Offered', 'Accepted', 'Next']}
           isEmpty={rounds.filter((r) => match(r, filter)).length === 0}
           emptyMessage="No rounds here yet."
         >
@@ -89,6 +90,9 @@ export default function RoundsPage() {
                   )}
                 </TableCell>
                 <TableCell className="font-mono">{r.totalSupply}</TableCell>
+                <TableCell>
+                  <SupplyLeft round={r} />
+                </TableCell>
                 <TableCell className="font-mono">
                   {r.stats.requestedTotal}
                   <span className="text-xs text-muted-foreground"> · {r.stats.preorderCount} shops</span>
@@ -109,6 +113,24 @@ export default function RoundsPage() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+/** Boxes of the supply still free, with a tiny bar: how full the round is at a glance. */
+function SupplyLeft({ round }: { round: AdminRound }) {
+  const v = supplyView(round)
+  if (round.status === 'cancelled') return <span className="text-muted-foreground">—</span>
+  const usedPct = v.supply > 0 ? Math.min(100, ((v.supply - v.left) / v.supply) * 100) : 0
+  return (
+    <div className="min-w-16" title={`${v.left} of ${v.supply} boxes left: ${v.leftLabel}`}>
+      <p className="font-mono">
+        {v.left}
+        {v.over > 0 && <span className="text-xs text-warning"> · +{v.over} over</span>}
+      </p>
+      <div className="mt-1 h-1.5 w-16 overflow-hidden rounded-full bg-muted" aria-hidden>
+        <div className="h-full bg-foreground/50" style={{ width: `${usedPct}%` }} />
+      </div>
     </div>
   )
 }

@@ -27,6 +27,7 @@ import { boxes, formatBaht, formatDate, formatDateTime, formatDeadline } from '@
 import { RoundFormModal } from './components/RoundFormModal'
 import { AdjustModal, ArriveModal, ScheduleModal } from './components/RoundModals'
 import { RoundSteps } from './components/RoundSteps'
+import { SupplyCard } from './components/SupplyCard'
 
 type OpenModal = 'edit' | 'arrive' | 'schedule' | { adjust: RoundAllocation } | null
 
@@ -120,6 +121,8 @@ export default function RoundDetailPage() {
                 ]}
               />
             </Card>
+
+            <SupplyCard round={round} />
 
             <StatGrid className="lg:grid-cols-5">
               <StatCard

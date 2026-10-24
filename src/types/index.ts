@@ -143,6 +143,10 @@ export interface RoundStats {
   requestedTotal: number
   offeredTotal: number
   acceptedTotal: number
+  /** Offers calculated but not published yet. */
+  plannedTotal: number
+  /** Published offers shops haven't answered yet. */
+  waitingTotal: number
   pendingDeposits: number
   openOrders: number
 }
