@@ -130,6 +130,6 @@ There are two copies of the portal, each a Vercel project built from this repo, 
 2. Test it on UAT. UAT shows an orange strip at the top and `[UAT]` in the tab title; its orders and payments are test data.
 3. When it looks right, run **Actions → Promote to production → Run workflow**. It moves the `production` branch to `main`, and Vercel deploys it to production. When a change needs the backend too, promote hiteffect-dis-backend first.
 
-Each project only deploys its own branch (`ignoreCommand` in `vercel.json` skips preview deployments). `vercel.json` also sends every path to `index.html`, so deep links work. The build fails on Vercel without `VITE_APP_ENV`, so a project can't point at the wrong backend by accident. The CI workflow (`.github/workflows/ci.yml`) runs lint, the format check and the build on every push and pull request.
+Each project only deploys its own branch (`ignoreCommand` in `vercel.json` runs `scripts/vercel-ignore-build.sh`, which skips preview deployments). `vercel.json` also sends every path to `index.html`, so deep links work. The build fails on Vercel without `VITE_APP_ENV`, so a project can't point at the wrong backend by accident. The CI workflow (`.github/workflows/ci.yml`) runs lint, the format check and the build on every push and pull request.
 
 DNS for both addresses is at Namecheap (Advanced DNS for hiteffect.store): a CNAME record for `dis` and one for `dis-uat`, pointing where each Vercel project's Domains page says. Vercel issues the HTTPS certificates.
