@@ -33,10 +33,11 @@ Log in with the admin from the backend's `.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD
 
 **Before going live,** put your real PromptPay ID (mobile number or 13-digit tax ID) and bank details in `src/constants/company.ts` and set `testOnly` to `false`. For now it has test details that can't receive money, and the payment window says so. Every slip payment shows them: a PromptPay QR code with the amount already filled in (`src/utils/promptpay.ts`, the Thai QR Payment format, same output as the `promptpay-qr` package) and the bank account with copy buttons.
 
-| Variable            | Default                               | What it is                                        |
-| ------------------- | ------------------------------------- | ------------------------------------------------- |
-| `VITE_API_BASE_URL` | the Vercel URL in `src/api/client.ts` | Backend URL, including the `/api` prefix          |
-| `VITE_BASE_PATH`    | `/`                                   | Path the app is served from (set by CI for Pages) |
+| Variable            | Default                   | What it is                                                     |
+| ------------------- | ------------------------- | -------------------------------------------------------------- |
+| `VITE_APP_ENV`      | local                     | `production` or `uat`; picks the backend (`src/config/env.ts`) |
+| `VITE_API_BASE_URL` | the environment's backend | Backend URL, including the `/api` prefix, to override it       |
+| `VITE_BASE_PATH`    | `/`                       | Path the app is served from                                    |
 
 | Script              | What it does                         |
 | ------------------- | ------------------------------------ |
@@ -114,8 +115,21 @@ src/
 - **Slips.** Images are shrunk in the browser (`src/utils/image.ts`) before upload.
 - **Online payments (Xendit).** When the backend has Xendit set up (`GET /payment-options`), every payment form offers **Pay online** next to the slip, and it's the default. The app asks the backend to start the payment, then sends the shop to Xendit's page (`src/utils/checkout.ts`). Xendit sends the shop back to `/orders/:id?payment=:paymentId`, and the order page asks the backend to check the payment with Xendit (a few times if Xendit is still busy) and shows the result. While a payment is open, the order page offers **Continue payment** and **Check payment**. Admins can't confirm online payments by hand; Xendit does.
 
-## Deployment
+## Environments
 
-The site is hosted on **GitHub Pages**, like stock-hiteffect-frontend. The workflow in `.github/workflows/deploy.yml` runs lint, the format check and the build on every push and pull request, and deploys `dist/` to Pages on pushes to `main`. It is served at **https://dis.hiteffect.store**: the custom domain is set under Settings → Pages, with a CNAME record `dis` → `bossymu.github.io` at Namecheap. The workflow builds with `VITE_BASE_PATH=/` for that domain and copies `index.html` to `404.html`, so deep links work. The old `bossymu.github.io/hiteffect-dis-frontend` address redirects to it.
+There are two copies of the portal, each a Vercel project built from this repo, with its own backend and database:
 
-The backend accepts requests from its `APP_URL` (`https://dis.hiteffect.store` on Vercel) and from any origin in its `CORS_ORIGINS` setting.
+| Environment | Address                         | Vercel project                | Branch       | `VITE_APP_ENV` | Backend                                             |
+| ----------- | ------------------------------- | ----------------------------- | ------------ | -------------- | --------------------------------------------------- |
+| UAT         | https://dis-uat.hiteffect.store | `hiteffect-dis-frontend`      | `main`       | `uat`          | `https://hiteffect-dis-backend.vercel.app/api`      |
+| Production  | https://dis.hiteffect.store     | `hiteffect-dis-frontend-prod` | `production` | `production`   | `https://hiteffect-dis-backend-prod.vercel.app/api` |
+
+**Releasing a change:**
+
+1. Push to `main`. Vercel deploys it to UAT within a minute or two.
+2. Test it on UAT. UAT shows an orange strip at the top and `[UAT]` in the tab title; its orders and payments are test data.
+3. When it looks right, run **Actions → Promote to production → Run workflow**. It moves the `production` branch to `main`, and Vercel deploys it to production. When a change needs the backend too, promote hiteffect-dis-backend first.
+
+Each project only deploys its own branch (`ignoreCommand` in `vercel.json` skips preview deployments). `vercel.json` also sends every path to `index.html`, so deep links work. The build fails on Vercel without `VITE_APP_ENV`, so a project can't point at the wrong backend by accident. The CI workflow (`.github/workflows/ci.yml`) runs lint, the format check and the build on every push and pull request.
+
+DNS for both addresses is at Namecheap (Advanced DNS for hiteffect.store): a CNAME record for `dis` and one for `dis-uat`, pointing where each Vercel project's Domains page says. Vercel issues the HTTPS certificates.

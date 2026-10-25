@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "//": "Each Vercel project deploys only its production branch: main for UAT, production for production.",
+  "ignoreCommand": "[ \"$VERCEL_ENV\" != production ]",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

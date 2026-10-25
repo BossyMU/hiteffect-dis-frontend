@@ -3,13 +3,11 @@
  * It adds the login token, and logs the user out when the server says the token is no longer valid.
  */
 
-// Backend URL, including the /api prefix. VITE_API_BASE_URL (in .env or CI) overrides it when set.
-//   npm run dev    → /api, which the Vite dev server forwards to the local backend on localhost:3000
-//                    (see vite.config.ts; start the backend with `npm run dev` in hiteffect-dis-backend)
-//   npm run build  → the hosted backend on Vercel
-const DEFAULT_API_BASE_URL = import.meta.env.DEV ? '/api' : 'https://hiteffect-dis-backend.vercel.app/api'
+import { APP_ENV, BACKEND_URL } from '@/config/env'
 
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '')
+// Backend URL, including the /api prefix: the one for this environment (src/config/env.ts).
+// VITE_API_BASE_URL (in .env) overrides it, for example to try a local frontend against UAT.
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || BACKEND_URL[APP_ENV]).replace(/\/$/, '')
 
 const TOKEN_KEY = 'hed_token'
 

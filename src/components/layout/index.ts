@@ -1,4 +1,5 @@
 export { AppLayout } from './AppLayout'
 export { AuthLayout } from './AuthLayout'
 export { BrandMark } from './BrandMark'
+export { EnvBanner } from './EnvBanner'
 export { GuestOnly, RequireAuth } from './RequireAuth'
