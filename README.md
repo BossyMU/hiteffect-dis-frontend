@@ -116,6 +116,6 @@ src/
 
 ## Deployment
 
-The site is hosted on **GitHub Pages**, like stock-hiteffect-frontend. The workflow in `.github/workflows/deploy.yml` runs lint, the format check and the build on every push and pull request, and deploys `dist/` to Pages on pushes to `main`. It builds with `VITE_BASE_PATH=/<repo-name>/` and copies `index.html` to `404.html`, so deep links work.
+The site is hosted on **GitHub Pages**, like stock-hiteffect-frontend. The workflow in `.github/workflows/deploy.yml` runs lint, the format check and the build on every push and pull request, and deploys `dist/` to Pages on pushes to `main`. It is served at **https://dis.hiteffect.store**: the custom domain is set under Settings → Pages, with a CNAME record `dis` → `bossymu.github.io` at Namecheap. The workflow builds with `VITE_BASE_PATH=/` for that domain and copies `index.html` to `404.html`, so deep links work. The old `bossymu.github.io/hiteffect-dis-frontend` address redirects to it.
 
-The backend only accepts requests from origins in its `CORS_ORIGINS` setting. Set it to `https://bossymu.github.io,http://localhost:5173` on Vercel.
+The backend accepts requests from its `APP_URL` (`https://dis.hiteffect.store` on Vercel) and from any origin in its `CORS_ORIGINS` setting.

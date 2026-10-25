@@ -31,8 +31,9 @@ jobs:
       - run: npm run format:check
       - run: npm run build
         env:
-          # Served from https://<user>.github.io/<repo>/
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          # Served from the root of the custom domain https://dis.hiteffect.store (Settings → Pages).
+          # Without a custom domain it would be /${{ github.event.repository.name }}/ on <user>.github.io.
+          VITE_BASE_PATH: /
           # Optional override of the backend URL, set under Settings → Secrets and variables → Actions → Variables.
           # When unset, the app uses the Vercel backend from src/api/client.ts.
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
