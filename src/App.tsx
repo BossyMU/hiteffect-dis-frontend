@@ -6,6 +6,7 @@ import { ToastProvider } from '@/context/ToastContext'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage'
 import PaymentsPage from '@/pages/admin/PaymentsPage'
+import ProductPreviewPage from '@/pages/admin/ProductPreviewPage'
 import ProductsPage from '@/pages/admin/ProductsPage'
 import RoundDetailPage from '@/pages/admin/RoundDetailPage'
 import RoundsPage from '@/pages/admin/RoundsPage'
@@ -61,6 +62,8 @@ export default function App() {
                   <Route path={PATHS.adminPayments} element={<PaymentsPage />} />
                   <Route path={PATHS.adminOrders} element={<AdminOrdersPage />} />
                   <Route path={PATHS.adminProducts} element={<ProductsPage />} />
+                  <Route path={PATHS.adminPreview} element={<ProductPreviewPage />} />
+                  <Route path="/admin/preview/:id" element={<ProductPreviewPage />} />
                   <Route path={PATHS.adminShops} element={<ShopsPage />} />
                 </Route>
               </Route>

@@ -29,7 +29,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     // Products, Pre-orders and the cart are tabs of one catalog.
     { to: PATHS.products, label: 'Products', icon: '▦', also: [PATHS.preorders, PATHS.cart] },
     { to: PATHS.myPreorders, label: 'My pre-orders', icon: '◈' },
-    { to: PATHS.orders, label: 'Orders', icon: '◻' },
+    { to: PATHS.orders, label: 'My orders', icon: '◻' },
     { to: PATHS.profile, label: 'Profile', icon: '◎' },
   ],
   admin: [
@@ -38,6 +38,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { to: PATHS.adminPayments, label: 'Payments', icon: '✓' },
     { to: PATHS.adminOrders, label: 'Orders', icon: '◻' },
     { to: PATHS.adminProducts, label: 'Products', icon: '▦' },
+    { to: PATHS.adminPreview, label: 'Product preview', icon: '◇' },
     { to: PATHS.adminShops, label: 'Shops', icon: '◎' },
   ],
 }

@@ -100,7 +100,7 @@ export default function ShopOrderPage() {
       <PageHeader
         title={order ? `Order ${order.orderNo}` : 'Order'}
         subtitle={order && <OrderBadges order={order} />}
-        back={{ to: PATHS.orders, label: 'Orders' }}
+        back={{ to: PATHS.orders, label: 'My orders' }}
         actions={
           <>
             {canCancel && (

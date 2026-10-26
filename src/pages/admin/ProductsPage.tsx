@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { adminApi } from '@/api'
 import {
   Badge,
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
+import { PATHS } from '@/routes/paths'
 import type { NewProduct, Product, Tier } from '@/types'
 import { formatBaht, formatDateTime } from '@/utils/format'
 import { formatWeight } from '@/utils/shipping'
@@ -87,6 +89,12 @@ export default function ProductsPage() {
                   <Button size="sm" variant="secondary" onClick={() => setAdjusting(p)}>
                     Stock
                   </Button>
+                  <Link
+                    to={PATHS.adminPreviewProduct(p.id)}
+                    className="self-center px-1 text-sm font-semibold text-info hover:underline"
+                  >
+                    Preview
+                  </Link>
                 </div>
               </TableCell>
             </TableRow>

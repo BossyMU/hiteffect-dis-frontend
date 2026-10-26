@@ -47,7 +47,7 @@ export default function ShopOrdersPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Orders" subtitle="Pre-order and regular orders" />
+      <PageHeader title="My orders" subtitle="Pre-order and regular orders" />
       <FilterBar>
         {FILTERS.map((f) => (
           <FilterChip

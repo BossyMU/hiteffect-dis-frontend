@@ -23,5 +23,8 @@ export const PATHS = {
   adminPayments: '/admin/payments',
   adminOrders: '/admin/orders',
   adminProducts: '/admin/products',
+  /** The catalog as shops see it. */
+  adminPreview: '/admin/preview',
+  adminPreviewProduct: (id: string) => `/admin/preview/${id}`,
   adminShops: '/admin/shops',
 } as const
