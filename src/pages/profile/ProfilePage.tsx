@@ -97,7 +97,15 @@ export default function ProfilePage() {
             <TextInput id="phone" value={form.phone} onChange={(e) => set('phone')(e.target.value)} />
           </Field>
         </div>
-        <Field label="Shipping address" htmlFor="address">
+        <Field
+          label={user.role === 'admin' ? 'Warehouse address' : 'Shipping address'}
+          htmlFor="address"
+          hint={
+            user.role === 'admin'
+              ? 'Shown to shops that pick up their orders, and printed as the sender on shipping labels.'
+              : undefined
+          }
+        >
           <TextArea id="address" value={form.address} onChange={(e) => set('address')(e.target.value)} />
         </Field>
       </Card>
