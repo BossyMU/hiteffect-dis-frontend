@@ -334,7 +334,7 @@ function RequestTable({ round }: { round: RoundDetail }) {
     <div className="space-y-3">
       <SectionTitle>Requests</SectionTitle>
       <DataTable
-        headers={['Shop', 'Tier', 'Boxes', 'Status', 'Last change']}
+        headers={['Shop', 'Tier', 'Boxes', 'Status', 'Terms agreed', 'Last change']}
         isEmpty={round.preorders.length === 0}
         emptyMessage={round.status === 'draft' ? 'Open the round so shops can request.' : 'No requests yet.'}
       >
@@ -347,6 +347,13 @@ function RequestTable({ round }: { round: RoundDetail }) {
               <Badge tone={p.status === 'submitted' ? 'info' : 'neutral'}>
                 {p.status === 'submitted' ? 'Requested' : 'Withdrawn'}
               </Badge>
+            </TableCell>
+            <TableCell className="text-xs text-muted-foreground">
+              {p.termsAcceptedAt ? (
+                <span title={`Version ${p.termsVersion}`}>✓ {formatDateTime(p.termsAcceptedAt)}</span>
+              ) : (
+                '—'
+              )}
             </TableCell>
             <TableCell className="font-mono text-xs text-muted-foreground">
               {formatDateTime(p.updatedAt)}

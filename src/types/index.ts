@@ -166,6 +166,9 @@ export interface RoundPreorder {
   status: 'submitted' | 'withdrawn'
   createdAt: string
   updatedAt: string
+  /** The pre-order terms the shop agreed to with this request ('' for requests made before terms existed). */
+  termsVersion: string
+  termsAcceptedAt: string | null
 }
 
 export interface RoundAllocation {
@@ -234,7 +237,14 @@ export interface ShopRound extends Round {
   productReleaseDate: string | null
   unitPrice: number
   maxPreorderQty: number | null
-  myPreorder: { requestedQty: number; status: 'submitted' | 'withdrawn'; updatedAt: string } | null
+  myPreorder: {
+    requestedQty: number
+    status: 'submitted' | 'withdrawn'
+    updatedAt: string
+    /** The terms version the shop agreed to when it last saved the request. */
+    termsVersion: string
+    termsAcceptedAt: string | null
+  } | null
   myAllocation: {
     id: string
     offeredQty: number
@@ -250,8 +260,9 @@ export interface ShopRound extends Round {
     orderNo: string
     status: OrderStatus
     subtotal: number
-    /** Added with the balance when the stock arrives; 0 until then. */
+    /** Added with the balance when the stock arrives; 0 until then, and always 0 for pick-up. */
     shippingFee: number
+    deliveryMethod: DeliveryMethod
     depositAmount: number
     paidAmount: number
     amountDue: number
@@ -317,8 +328,10 @@ export interface Order {
   subtotal: number
   /** EMS shipping with the service fee. Pre-orders: 0 until the stock arrives. */
   shippingFee: number
-  /** How shipping was worked out; null while there is none yet. */
+  /** How shipping was worked out; null while there is none yet, and for pick-up. */
   shippingDetail: ShippingQuote | null
+  /** EMS to the shop's address, or picked up at our warehouse (no shipping). */
+  deliveryMethod: DeliveryMethod
   /** subtotal + shippingFee: what the shop pays in full. */
   total: number
   /** Pre-orders: the deposit, on the goods only. */
@@ -402,9 +415,35 @@ export interface SlipUpload {
   slipImage: string
 }
 
-/** Whether shops can pay online (Xendit is set up on the backend). */
+/** How an order reaches the shop. */
+export type DeliveryMethod = 'ems' | 'pickup'
+
+/** Settings from the backend: online payment, where pick-up is, which Thailand Post features are on. */
 export interface PaymentOptions {
   onlinePayment: boolean
+  pickup: { address: string; hours: string }
+  thaipost: {
+    /** Tracking numbers can be handed out from a range Thailand Post assigned to us. */
+    autoTrackingNo: boolean
+    /** Live tracking status from Thailand Post's Track & Trace API. */
+    tracking: boolean
+  }
+}
+
+/** One scan of a parcel by Thailand Post, newest first. */
+export interface TrackingEvent {
+  status: string
+  description: string
+  at: string | null
+  location: string
+  postcode: string
+  receiver: string
+}
+
+export interface TrackingStatus {
+  trackingNo: string
+  delivered: boolean
+  events: TrackingEvent[]
 }
 
 /** An online payment that was started: send the shop to `checkoutUrl`. */

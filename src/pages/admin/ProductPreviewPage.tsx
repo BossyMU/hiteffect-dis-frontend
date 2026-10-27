@@ -142,7 +142,7 @@ function PreviewList({
 
       <p className="font-mono text-xs text-muted-foreground">
         {filtered.length} product{filtered.length === 1 ? '' : 's'} · {preview.tier?.name ?? ''} tier prices
-        per box, before VAT
+        per box, including VAT
       </p>
       {products.length === 0 ? (
         <p className="py-16 text-center text-sm text-muted-foreground">
@@ -248,7 +248,7 @@ function PreviewDetail({
           <p className="font-mono text-2xl font-semibold">
             {formatBaht(priceFor(p, preview.tier?.id ?? null))}
           </p>
-          <p className="text-xs text-muted-foreground">Per box, before VAT · {tierName} tier price</p>
+          <p className="text-xs text-muted-foreground">Per box, including VAT · {tierName} tier price</p>
         </div>
 
         <p className={soldOut ? 'text-sm text-muted-foreground' : 'text-sm font-medium text-success'}>

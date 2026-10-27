@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { shopApi } from '@/api'
+import { TermsModal } from '@/components/terms/TermsModal'
+import { TERMS_VERSION } from '@/constants/terms'
 import { Button, LoadState } from '@/components/ui'
 import { useUser } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
@@ -69,8 +71,8 @@ function PreorderDetail({ round: r, onChanged }: { round: ShopRound; onChanged: 
       <div>
         <p className="font-mono text-2xl font-semibold">{formatBaht(r.unitPrice)}</p>
         <p className="text-xs text-muted-foreground">
-          Per box, before VAT · {user.tierName ?? 'your'} tier price · {r.depositPct}% deposit when you accept
-          your offer
+          Per box, including VAT · {user.tierName ?? 'your'} tier price · {r.depositPct}% deposit when you
+          accept your offer
         </p>
       </div>
 
@@ -266,14 +268,23 @@ function RequestForm({ round: r, onChanged }: { round: ShopRound; onChanged: (r?
   const cap = r.maxPreorderQty ?? 999
   const [qty, setQty] = useState(asked?.requestedQty ?? 1)
   const [busy, setBusy] = useState(false)
+  const [terms, setTerms] = useState<'agree' | 'read' | null>(null)
+  // Shops agree to the terms before their first request, and again whenever the terms change.
+  const agreedVersion = r.myPreorder?.termsVersion === TERMS_VERSION ? TERMS_VERSION : null
 
-  async function send() {
+  async function send(termsVersion: string) {
     setBusy(true)
-    await run(
-      async () => onChanged(await shopApi.setPreorder(r.id, qty)),
+    const ok = await run(
+      async () => onChanged(await shopApi.setPreorder(r.id, qty, termsVersion)),
       asked ? `Request changed to ${boxes(qty)}` : `Requested ${boxes(qty)}`,
     )
     setBusy(false)
+    if (ok) setTerms(null)
+  }
+
+  function request() {
+    if (agreedVersion) void send(agreedVersion)
+    else setTerms('agree')
   }
 
   async function withdraw() {
@@ -302,7 +313,7 @@ function RequestForm({ round: r, onChanged }: { round: ShopRound; onChanged: (r?
       <div className="space-y-2">
         <button
           type="button"
-          onClick={() => void send()}
+          onClick={request}
           disabled={busy || asked?.requestedQty === qty}
           className={cn(
             asked?.requestedQty === qty ? cardButton.disabled : cardButton.primary,
@@ -325,8 +336,26 @@ function RequestForm({ round: r, onChanged }: { round: ShopRound; onChanged: (r?
             Withdraw request
           </button>
         )}
-        <p className="text-xs text-muted-foreground">No payment now.</p>
+        <p className="text-xs text-muted-foreground">
+          No payment now. By requesting you agree to the{' '}
+          <button
+            type="button"
+            onClick={() => setTerms('read')}
+            className="font-semibold text-info hover:underline"
+          >
+            pre-order terms and policies
+          </button>
+          .
+        </p>
       </div>
+      {terms && (
+        <TermsModal
+          onClose={() => setTerms(null)}
+          onAgree={terms === 'agree' ? (version) => void send(version) : undefined}
+          agreeLabel={asked ? `Agree and change to ${boxes(qty)}` : `Agree and request ${boxes(qty)}`}
+          busy={busy}
+        />
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { adminApi } from '@/api'
-import { OrderSummary } from '@/components/orders'
+import { Link } from 'react-router'
+import { OrderSummary, PickupPlace, TrackingTimeline } from '@/components/orders'
 import {
   Button,
   DataTable,
@@ -23,8 +24,11 @@ import { ORDER_STATUS, ORDER_STATUSES } from '@/constants/status'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { usePagination } from '@/hooks/usePagination'
+import { usePaymentOptions } from '@/hooks/usePaymentOptions'
+import { PATHS } from '@/routes/paths'
 import type { Order, OrderStatus } from '@/types'
 import { boxes, formatBaht, formatDate, formatDeadline } from '@/utils/format'
+import { isValidTrackingNo, normalizeTrackingNo } from '@/utils/trackingNo'
 
 export default function AdminOrdersPage() {
   const { data, status, error, reload } = useApiData(() => adminApi.orders())
@@ -47,7 +51,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Orders" subtitle="Ship paid orders; cancel when needed" />
+      <PageHeader title="Orders" subtitle="Ship or hand over paid orders; cancel when needed" />
       <FilterBar>
         <FilterChip
           active={filter === 'all'}
@@ -110,12 +114,15 @@ export default function AdminOrdersPage() {
                 {o.roundTitle ?? o.items.map((i) => i.productName).join(', ')}
                 <p className="text-xs text-muted-foreground">
                   {boxes(o.items.reduce((s, i) => s + i.qty, 0))}
+                  {o.deliveryMethod === 'pickup' && (
+                    <span className="font-semibold text-info"> · Pick-up</span>
+                  )}
                 </p>
               </TableCell>
               <TableCell className="font-mono font-semibold">{formatBaht(o.total)}</TableCell>
               <TableCell className="font-mono text-xs">{formatBaht(o.paidAmount)}</TableCell>
               <TableCell>
-                <OrderStatusBadge status={o.status} />
+                <OrderStatusBadge status={o.status} pickup={o.deliveryMethod === 'pickup'} />
                 {o.refundDue > 0 && (
                   <p className="mt-1 text-xs text-danger">Refund {formatBaht(o.refundDue)}</p>
                 )}
@@ -124,7 +131,9 @@ export default function AdminOrdersPage() {
                 {o.status === 'pending_payment'
                   ? formatDeadline(o.paymentDueAt)
                   : o.status === 'paid'
-                    ? formatDate(o.shipDate)
+                    ? o.deliveryMethod === 'pickup'
+                      ? 'Ready to pick up'
+                      : formatDate(o.shipDate)
                     : '—'}
               </TableCell>
             </TableRow>
@@ -156,8 +165,10 @@ function OrderModal({
   onChanged: (o: Order) => void
 }) {
   const { run } = useToast()
+  const options = usePaymentOptions()
+  const pickup = order.deliveryMethod === 'pickup'
   const [mode, setMode] = useState<'view' | 'ship' | 'cancel'>('view')
-  const [tracking, setTracking] = useState('')
+  const [tracking, setTracking] = useState(order.trackingNo ?? '')
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -165,16 +176,19 @@ function OrderModal({
 
   async function submit() {
     if (mode === 'cancel' && !reason.trim()) return setError('Give a reason; the shop sees it')
+    if (mode === 'ship' && !pickup && tracking.trim() && !isValidTrackingNo(tracking)) {
+      return setError('This is not a valid Thailand Post number. Check it against the post office receipt.')
+    }
     setBusy(true)
     let saved: Order | null = null
     const ok = await run(
       async () => {
         saved =
           mode === 'ship'
-            ? await adminApi.shipOrder(order.id, tracking.trim())
+            ? await adminApi.shipOrder(order.id, pickup ? '' : normalizeTrackingNo(tracking))
             : await adminApi.cancelOrder(order.id, reason.trim())
       },
-      mode === 'ship' ? 'Marked as shipped' : 'Order cancelled',
+      mode === 'ship' ? (pickup ? 'Marked as picked up' : 'Marked as shipped') : 'Order cancelled',
     )
     setBusy(false)
     if (ok && saved) {
@@ -196,7 +210,18 @@ function OrderModal({
                 Cancel order…
               </Button>
             )}
-            {order.status === 'paid' && <Button onClick={() => setMode('ship')}>Mark shipped…</Button>}
+            {order.status === 'paid' && !pickup && (
+              <Link
+                to={PATHS.adminOrderLabel(order.id)}
+                target="_blank"
+                className="self-center px-2 text-sm font-semibold text-info hover:underline"
+              >
+                Print label
+              </Link>
+            )}
+            {order.status === 'paid' && (
+              <Button onClick={() => setMode('ship')}>{pickup ? 'Mark picked up…' : 'Mark shipped…'}</Button>
+            )}
           </>
         ) : (
           <>
@@ -208,7 +233,7 @@ function OrderModal({
               disabled={busy}
               onClick={() => void submit()}
             >
-              {mode === 'ship' ? 'Shipped' : 'Cancel order'}
+              {mode === 'ship' ? (pickup ? 'Picked up' : 'Shipped') : 'Cancel order'}
             </Button>
           </>
         )
@@ -216,11 +241,60 @@ function OrderModal({
     >
       <div className="space-y-5">
         <OrderSummary order={order} />
-        <p className="text-sm text-muted-foreground">Ship to: {order.shipAddress || '—'}</p>
+        {pickup ? (
+          <p className="text-sm text-muted-foreground">
+            Pick-up at <PickupPlace />
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">Ship to: {order.shipAddress || '—'}</p>
+        )}
         {order.note && <p className="text-sm">Note: {order.note}</p>}
-        {mode === 'ship' && (
-          <Field label="Tracking number (optional)" htmlFor="tracking">
-            <TextInput id="tracking" value={tracking} onChange={(e) => setTracking(e.target.value)} />
+        {!pickup && order.status === 'shipped' && order.trackingNo && options?.thaipost.tracking && (
+          <TrackingTimeline load={() => adminApi.tracking(order.id)} />
+        )}
+        {mode === 'ship' && pickup && (
+          <p className="rounded-md border border-info/30 bg-info/5 px-4 py-3 text-sm">
+            Check the shop's order number before handing over the boxes. They are taken out of stock and the
+            shop is told the order was picked up.
+          </p>
+        )}
+        {mode === 'ship' && !pickup && (
+          <Field
+            label="Thailand Post tracking number"
+            htmlFor="tracking"
+            error={error}
+            hint="From the post office receipt, e.g. EB123456785TH. Typos are caught by the check digit."
+          >
+            <div className="flex gap-2">
+              <TextInput
+                id="tracking"
+                value={tracking}
+                onChange={(e) => {
+                  setTracking(e.target.value)
+                  setError(null)
+                }}
+                className="font-mono uppercase"
+                placeholder="EB123456785TH"
+              />
+              {options?.thaipost.autoTrackingNo && !tracking && (
+                <Button
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      const o = await adminApi.assignTrackingNo(order.id)
+                      setTracking(o.trackingNo)
+                      onChanged(o)
+                    }, 'Tracking number assigned')
+                  }
+                >
+                  Get number
+                </Button>
+              )}
+            </div>
+            {tracking && isValidTrackingNo(tracking) && (
+              <p className="mt-1 text-xs text-success">✓ Valid number</p>
+            )}
           </Field>
         )}
         {mode === 'cancel' && (

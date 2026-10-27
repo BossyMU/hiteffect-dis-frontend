@@ -1,5 +1,6 @@
 /** Calls a shop account makes. */
 import type {
+  DeliveryMethod,
   OnlineCheckout,
   Order,
   PaymentOptions,
@@ -8,6 +9,7 @@ import type {
   ShopProduct,
   ShopRound,
   SlipUpload,
+  TrackingStatus,
 } from '@/types'
 import { request } from './client'
 
@@ -16,22 +18,26 @@ export const shopApi = {
 
   rounds: () => request<ShopRound[]>('/shop/rounds'),
   round: (id: string) => request<ShopRound>(`/shop/rounds/${id}`),
-  setPreorder: (roundId: string, requestedQty: number) =>
-    request<ShopRound>(`/shop/rounds/${roundId}/preorder`, { method: 'PUT', body: { requestedQty } }),
+  /** Save a request; `termsVersion` is the version of the pre-order terms the shop agreed to. */
+  setPreorder: (roundId: string, requestedQty: number, termsVersion: string) =>
+    request<ShopRound>(`/shop/rounds/${roundId}/preorder`, {
+      method: 'PUT',
+      body: { requestedQty, termsVersion },
+    }),
   withdrawPreorder: (roundId: string) =>
     request<ShopRound>(`/shop/rounds/${roundId}/preorder`, { method: 'DELETE' }),
-  acceptOffer: (allocationId: string, qty: number, slip: SlipUpload) =>
+  acceptOffer: (allocationId: string, qty: number, slip: SlipUpload, deliveryMethod: DeliveryMethod) =>
     request<{ roundId: string; orderId: string }>(`/shop/allocations/${allocationId}/accept`, {
       method: 'POST',
-      body: { qty, ...slip },
+      body: { qty, ...slip, deliveryMethod },
     }),
   /** Accept and pay the deposit online: returns Xendit's payment page. */
-  acceptOfferOnline: (allocationId: string, qty: number) =>
+  acceptOfferOnline: (allocationId: string, qty: number, deliveryMethod: DeliveryMethod) =>
     request<{ roundId: string; orderId: string; checkoutUrl: string }>(
       `/shop/allocations/${allocationId}/accept`,
       {
         method: 'POST',
-        body: { qty, method: 'Xendit' },
+        body: { qty, method: 'Xendit', deliveryMethod },
       },
     ),
   declineOffer: (allocationId: string) =>
@@ -42,10 +48,18 @@ export const shopApi = {
 
   orders: () => request<Order[]>('/shop/orders'),
   order: (id: string) => request<Order>(`/shop/orders/${id}`),
-  shippingQuote: (items: { productId: string; qty: number }[]) =>
-    request<ShippingQuote>('/shop/shipping-quote', { method: 'POST', body: { items } }),
-  placeOrder: (items: { productId: string; qty: number }[], note: string) =>
-    request<Order>('/shop/orders', { method: 'POST', body: { items, note } }),
+  /** EMS shipping for the cart; null for pick-up (no shipping). */
+  shippingQuote: (items: { productId: string; qty: number }[], deliveryMethod: DeliveryMethod = 'ems') =>
+    request<ShippingQuote | null>('/shop/shipping-quote', {
+      method: 'POST',
+      body: { items, deliveryMethod },
+    }),
+  placeOrder: (items: { productId: string; qty: number }[], note: string, deliveryMethod: DeliveryMethod) =>
+    request<Order>('/shop/orders', { method: 'POST', body: { items, note, deliveryMethod } }),
+  /** EMS or pick-up, on a pre-order before its stock arrives. */
+  setDelivery: (orderId: string, deliveryMethod: DeliveryMethod) =>
+    request<Order>(`/shop/orders/${orderId}/delivery`, { method: 'PATCH', body: { deliveryMethod } }),
+  tracking: (orderId: string) => request<TrackingStatus>(`/shop/orders/${orderId}/tracking`),
   cancelOrder: (id: string) => request<Order>(`/shop/orders/${id}/cancel`, { method: 'POST' }),
   pay: (orderId: string, slip: SlipUpload) =>
     request<Order>(`/shop/orders/${orderId}/payments`, { method: 'POST', body: slip }),

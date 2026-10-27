@@ -9,3 +9,7 @@ export function shippingSummary(q: ShippingQuote) {
   const n = q.parcels.length
   return `EMS · ${n} ${n === 1 ? 'parcel' : 'parcels'}, ${formatWeight(q.totalGrams)}`
 }
+
+/** "Thailand Post EMS" or "Pick up at warehouse", for badges and summaries. */
+export const deliveryLabel = (method: 'ems' | 'pickup') =>
+  method === 'pickup' ? 'Pick up at warehouse' : 'Thailand Post EMS'

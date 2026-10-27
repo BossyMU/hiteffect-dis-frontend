@@ -53,7 +53,7 @@ export default function ProductsPage() {
       <LoadState status={status} error={error} onRetry={reload}>
         <p className="font-mono text-xs text-muted-foreground">
           {filtered.length} product{filtered.length === 1 ? '' : 's'} · {user.tierName ?? ''} tier prices per
-          box, before VAT
+          box, including VAT
         </p>
         {filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No products match.</p>

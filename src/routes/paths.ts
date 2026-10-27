@@ -22,6 +22,8 @@ export const PATHS = {
   adminRound: (id: string) => `/admin/rounds/${id}`,
   adminPayments: '/admin/payments',
   adminOrders: '/admin/orders',
+  /** Printable Thailand Post label for one order (opens without the app's menus). */
+  adminOrderLabel: (id: string) => `/admin/orders/${id}/label`,
   adminProducts: '/admin/products',
   /** The catalog as shops see it. */
   adminPreview: '/admin/preview',

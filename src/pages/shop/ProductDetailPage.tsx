@@ -68,7 +68,7 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
       <div>
         <p className="font-mono text-2xl font-semibold">{formatBaht(p.price)}</p>
         <p className="text-xs text-muted-foreground">
-          Per box, before VAT · {user.tierName ?? 'your'} tier price
+          Per box, including VAT · {user.tierName ?? 'your'} tier price
         </p>
       </div>
 

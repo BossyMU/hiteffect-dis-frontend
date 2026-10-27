@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { errorMessage, shopApi } from '@/api'
-import { OrderBadges, OrderItemsTable, OrderPaymentsTable } from '@/components/orders'
+import {
+  DeliveryChoice,
+  OrderBadges,
+  OrderItemsTable,
+  OrderPaymentsTable,
+  PickupPlace,
+  TrackingTimeline,
+} from '@/components/orders'
 import { OnlinePayNote, PayMethodChoice, type PayBy } from '@/components/payments/PayMethodChoice'
 import { SlipFields } from '@/components/payments/SlipFields'
 import { Button, Card, LoadState, Modal, ModalActions, PageHeader, SectionTitle } from '@/components/ui'
@@ -9,7 +16,7 @@ import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { usePaymentOptions } from '@/hooks/usePaymentOptions'
 import { PATHS } from '@/routes/paths'
-import type { Order, OrderPayment, SlipUpload } from '@/types'
+import type { DeliveryMethod, Order, OrderPayment, SlipUpload } from '@/types'
 import { goToCheckout } from '@/utils/checkout'
 import { lastConfirmedPayment, orderPayStatus } from './payStatus'
 import { formatBaht, formatDate, formatDateTime, formatDeadline } from '@/utils/format'
@@ -18,7 +25,8 @@ export default function ShopOrderPage() {
   const { id = '' } = useParams()
   const { run, showError, showSuccess } = useToast()
   const { data: order, setData, status, error, reload } = useApiData(() => shopApi.order(id), [id])
-  const online = usePaymentOptions()?.onlinePayment ?? false
+  const options = usePaymentOptions()
+  const online = options?.onlinePayment ?? false
   const [paying, setPaying] = useState(false)
   // Online is the default when it's available, until the shop picks.
   const [picked, setPicked] = useState<PayBy | null>(null)
@@ -159,28 +167,11 @@ export default function ShopOrderPage() {
                 )}
               </div>
               <div className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-1">
-                <Card className="space-y-3 p-4 sm:p-5">
-                  <SectionTitle>Delivery</SectionTitle>
-                  <Facts
-                    items={[
-                      ['Ship to', order.shipAddress || 'No address on file (update your profile)'],
-                      order.status === 'shipped'
-                        ? ['Shipped', formatDate(order.shippedAt)]
-                        : [
-                            'Planned ship date',
-                            order.shipDate ? formatDate(order.shipDate) : 'After payment',
-                          ],
-                      [
-                        'Tracking number',
-                        order.trackingNo ? (
-                          <span className="font-mono font-semibold">{order.trackingNo}</span>
-                        ) : (
-                          '—'
-                        ),
-                      ],
-                    ]}
-                  />
-                </Card>
+                <DeliveryCard
+                  order={order}
+                  onChanged={setData}
+                  trackingOn={options?.thaipost.tracking ?? false}
+                />
                 <Card className="space-y-3 p-4 sm:p-5">
                   <SectionTitle>Order</SectionTitle>
                   <Facts
@@ -275,6 +266,9 @@ function StatusNote({ order, pending }: { order: Order; pending?: OrderPayment }
   } else if (order.status === 'awaiting_stock') {
     text = `✓ ${confirmedText(order, 'deposit')} We will ask for the balance when the stock arrives.`
     confirmed = true
+  } else if (order.status === 'paid' && order.deliveryMethod === 'pickup') {
+    text = `✓ ${confirmedText(order, 'payment')} Your order is ready to pick up at our warehouse. Please bring your order number.`
+    confirmed = true
   } else if (order.status === 'paid') {
     text = `✓ ${confirmedText(order, 'payment')} ${order.shipDate ? `Planned ship date: ${formatDate(order.shipDate)}.` : 'We will ship it soon.'}`
     confirmed = true
@@ -295,6 +289,84 @@ function StatusNote({ order, pending }: { order: Order; pending?: OrderPayment }
       }
     >
       {text}
+    </Card>
+  )
+}
+
+/** A pre-order's delivery can change until its stock arrives (shipping is charged with the balance). */
+const canChangeDelivery = (o: Order) =>
+  o.type === 'preorder' && (o.status === 'awaiting_deposit' || o.status === 'awaiting_stock')
+
+/** EMS address and tracking, or where to pick up; a pre-order can switch before its stock arrives. */
+function DeliveryCard({
+  order,
+  onChanged,
+  trackingOn,
+}: {
+  order: Order
+  onChanged: (o: Order) => void
+  trackingOn: boolean
+}) {
+  const { run } = useToast()
+  const [busy, setBusy] = useState(false)
+  const pickup = order.deliveryMethod === 'pickup'
+  const shipped = order.status === 'shipped'
+
+  async function change(method: DeliveryMethod) {
+    if (method === order.deliveryMethod) return
+    setBusy(true)
+    await run(
+      async () => onChanged(await shopApi.setDelivery(order.id, method)),
+      method === 'pickup' ? 'You will pick this order up at our warehouse' : 'This order will be sent by EMS',
+    )
+    setBusy(false)
+  }
+
+  return (
+    <Card className="space-y-3 p-4 sm:p-5">
+      <SectionTitle>Delivery</SectionTitle>
+      {canChangeDelivery(order) ? (
+        <DeliveryChoice
+          value={order.deliveryMethod}
+          onChange={(m) => void change(m)}
+          disabled={busy}
+          name="order-delivery"
+          emsNote="To your address. Shipping is added to the balance when the stock arrives."
+        />
+      ) : pickup ? (
+        <Facts
+          items={[
+            ['Pick up at', <PickupPlace key="place" />],
+            shipped
+              ? ['Picked up', formatDate(order.shippedAt)]
+              : [
+                  'When',
+                  order.status === 'paid' ? 'Ready now. Bring your order number.' : 'Once the order is paid',
+                ],
+          ]}
+        />
+      ) : (
+        <Facts
+          items={[
+            ['Ship to', order.shipAddress || 'No address on file (update your profile)'],
+            shipped
+              ? ['Shipped', formatDate(order.shippedAt)]
+              : ['Planned ship date', order.shipDate ? formatDate(order.shipDate) : 'After payment'],
+            [
+              'Tracking number',
+              order.trackingNo ? <span className="font-mono font-semibold">{order.trackingNo}</span> : '—',
+            ],
+          ]}
+        />
+      )}
+      {canChangeDelivery(order) && pickup && (
+        <p className="text-xs text-muted-foreground">
+          Pick up at <PickupPlace />, once the balance is paid.
+        </p>
+      )}
+      {!pickup && shipped && order.trackingNo && trackingOn && (
+        <TrackingTimeline load={() => shopApi.tracking(order.id)} />
+      )}
     </Card>
   )
 }

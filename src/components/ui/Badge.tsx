@@ -39,8 +39,11 @@ export const AllocationStatusBadge = ({ status }: { status: AllocationStatus }) 
   <Badge tone={ALLOCATION_STATUS[status].tone}>{ALLOCATION_STATUS[status].label}</Badge>
 )
 
-export const OrderStatusBadge = ({ status }: { status: OrderStatus }) => (
-  <Badge tone={ORDER_STATUS[status].tone}>{ORDER_STATUS[status].label}</Badge>
+/** `pickup`: a pick-up order reads "Picked up" instead of "Shipped". */
+export const OrderStatusBadge = ({ status, pickup }: { status: OrderStatus; pickup?: boolean }) => (
+  <Badge tone={ORDER_STATUS[status].tone}>
+    {pickup && status === 'shipped' ? 'Picked up' : ORDER_STATUS[status].label}
+  </Badge>
 )
 
 /** `online`: an online payment, which reads "Paying online" while open and "Not completed" if unpaid. */

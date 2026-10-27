@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { errorMessage, shopApi } from '@/api'
-import { ShippingBreakdown } from '@/components/orders'
+import { DeliveryChoice, PickupPlace, ShippingBreakdown } from '@/components/orders'
 import { Button, Card, Field, LoadState, PageHeader, TextArea } from '@/components/ui'
 import { orderLimit, useCart, type CartLine } from '@/context/CartContext'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
-import type { ShippingQuote, ShopProduct, ShopRound } from '@/types'
+import type { DeliveryMethod, ShippingQuote, ShopProduct, ShopRound } from '@/types'
 import { boxes, formatBaht, formatDate } from '@/utils/format'
 import { shippingSummary } from '@/utils/shipping'
 import { ProductImage } from './components/ProductImage'
@@ -31,6 +31,7 @@ export default function CartPage() {
     Promise.all([shopApi.products(), shopApi.rounds()]),
   )
   const [note, setNote] = useState('')
+  const [delivery, setDelivery] = useState<DeliveryMethod>('ems')
   const [busy, setBusy] = useState(false)
 
   const checked = useMemo<CheckedLine[]>(() => {
@@ -45,8 +46,9 @@ export default function CartPage() {
   const count = orderable.reduce((s, c) => s + c.qty, 0)
   const goods = orderable.reduce((s, c) => s + c.qty * c.product!.price, 0)
   const itemsKey = JSON.stringify(orderable.map((c) => ({ productId: c.product!.id, qty: c.qty })))
-  const shipping = useShippingQuote(count > 0 ? itemsKey : null)
-  const total = goods + (shipping?.quote?.total ?? 0)
+  const pickup = delivery === 'pickup'
+  const shipping = useShippingQuote(count > 0 && !pickup ? itemsKey : null)
+  const total = goods + (pickup ? 0 : (shipping?.quote?.total ?? 0))
   const requests = (data?.[1] ?? []).filter(
     (r) => r.status === 'open' && r.myPreorder?.status === 'submitted',
   )
@@ -58,6 +60,7 @@ export default function CartPage() {
       const order = await shopApi.placeOrder(
         orderable.map((c) => ({ productId: c.product!.id, qty: c.qty })),
         note.trim(),
+        delivery,
       )
       orderId = order.id
     }, 'Order placed. Please pay to confirm it.')
@@ -73,7 +76,7 @@ export default function CartPage() {
   return (
     <div className="space-y-5">
       <ShopTabs />
-      <PageHeader title="Cart" subtitle="In-stock products. Prices per box, before VAT." />
+      <PageHeader title="Cart" subtitle="In-stock products. Prices per box, including VAT." />
       <LoadState status={status} error={error} onRetry={reload}>
         {cart.lines.length === 0 ? (
           <Card className="space-y-3 py-10 text-center">
@@ -103,35 +106,46 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">
-                    Shipping
-                    {shipping?.quote && (
+                    {pickup ? 'Pick-up' : 'Shipping'}
+                    {!pickup && shipping?.quote && (
                       <span className="block text-xs">{shippingSummary(shipping.quote)}</span>
                     )}
                   </dt>
                   <dd className="font-mono">
                     {count === 0
                       ? '—'
-                      : shipping == null
-                        ? 'Calculating…'
-                        : shipping.quote
-                          ? formatBaht(shipping.quote.total)
-                          : '—'}
+                      : pickup
+                        ? formatBaht(0)
+                        : shipping == null
+                          ? 'Calculating…'
+                          : shipping.quote
+                            ? formatBaht(shipping.quote.total)
+                            : '—'}
                   </dd>
                 </div>
               </dl>
-              {shipping?.error && <p className="text-sm text-danger">{shipping.error}</p>}
+              {!pickup && shipping?.error && <p className="text-sm text-danger">{shipping.error}</p>}
               <div className="flex items-baseline justify-between border-t border-border pt-3">
                 <span className="text-sm font-medium">Total</span>
                 <span className="font-mono text-2xl font-semibold text-primary-strong">
-                  {shipping == null && count > 0 ? '…' : formatBaht(total)}
+                  {!pickup && shipping == null && count > 0 ? '…' : formatBaht(total)}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Before VAT. Shipping is Thailand Post EMS plus a {shipping?.quote?.serviceFeePct ?? 7}%
-                service fee.
-              </p>
-              {shipping?.quote && <ShippingBreakdown quote={shipping.quote} />}
-              {shipping?.quote && !shipping.quote.postcode && (
+              <DeliveryChoice
+                value={delivery}
+                onChange={setDelivery}
+                name="cart-delivery"
+                emsNote={`To your address. Thailand Post EMS plus a ${shipping?.quote?.serviceFeePct ?? 7}% service fee.`}
+              />
+              <p className="text-xs text-muted-foreground">Prices include VAT.</p>
+              {pickup && (
+                <p className="rounded-md border border-info/30 bg-info/5 px-3 py-2 text-xs">
+                  Collect your order once it is paid: <PickupPlace className="font-medium" />. Please bring
+                  your order number.
+                </p>
+              )}
+              {!pickup && shipping?.quote && <ShippingBreakdown quote={shipping.quote} />}
+              {!pickup && shipping?.quote && !shipping.quote.postcode && (
                 <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
                   Your address has no postcode, so we can't check for a remote-area surcharge.{' '}
                   <Link to={PATHS.profile} className="font-semibold text-info hover:underline">

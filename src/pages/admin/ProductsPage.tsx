@@ -71,7 +71,11 @@ export default function ProductsPage() {
                   {p.setCode && ` · ${p.setCode}`}
                   {p.category && ` · ${p.category}`}
                   {p.tierPrices.length > 0 && ' · tier prices'}
-                  {p.weightGrams ? ` · ${formatWeight(p.weightGrams)}/box` : ' · weight not set'}
+                  {p.weightGrams ? (
+                    ` · ${formatWeight(p.weightGrams)}/box`
+                  ) : (
+                    <span className="font-semibold text-danger"> · weight missing: edit to add it</span>
+                  )}
                 </p>
               </TableCell>
               <TableCell className="font-mono">{formatBaht(p.basePrice)}</TableCell>
@@ -169,10 +173,8 @@ function ProductModal({
     if (!form.name.trim()) e.name = 'Required'
     if (!(Number(form.basePrice) >= 0) || form.basePrice === '') e.basePrice = 'Enter a price'
     if (form.imageUrl && !/^https?:\/\//.test(form.imageUrl)) e.imageUrl = 'A full https:// link'
-    if (
-      form.weightGrams.trim() !== '' &&
-      !(Number(form.weightGrams) >= 1 && Number(form.weightGrams) <= 30000)
-    )
+    if (form.weightGrams.trim() === '') e.weightGrams = 'Required: the weight of one box, for EMS shipping'
+    else if (!(Number(form.weightGrams) >= 1 && Number(form.weightGrams) <= 30000))
       e.weightGrams = 'Between 1 and 30,000 g'
     if (Object.keys(e).length) return setErrors(e)
 
@@ -189,7 +191,7 @@ function ProductModal({
       releaseDate: form.releaseDate || null,
       basePrice: Number(form.basePrice),
       maxPerOrder: optionalInt(form.maxPerOrder),
-      weightGrams: optionalInt(form.weightGrams),
+      weightGrams: Math.max(1, Math.floor(Number(form.weightGrams))),
       isListed: form.isListed,
       tierPrices: Object.entries(tierPrices)
         .filter(([, v]) => v.trim() !== '' && Number(v) >= 0)
@@ -225,7 +227,7 @@ function ProductModal({
             placeholder="FAB-OMN-BB"
           />
         </Field>
-        <Field label="Base price per box (before VAT)" htmlFor="p-price" error={errors.basePrice}>
+        <Field label="Base price per box (incl. VAT)" htmlFor="p-price" error={errors.basePrice}>
           <TextInput
             id="p-price"
             type="number"
@@ -284,10 +286,10 @@ function ProductModal({
           />
         </Field>
         <Field
-          label="Weight per box (grams)"
+          label="Weight per box (grams) *"
           htmlFor="p-weight"
           error={errors.weightGrams}
-          hint="For EMS shipping. Empty = 1 kg"
+          hint="For EMS shipping. Weigh one sealed box"
         >
           <TextInput
             id="p-weight"

@@ -4,7 +4,7 @@ import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL } from '@/constants/status'
 import type { Order, OrderPayment } from '@/types'
 import { cn } from '@/utils/cn'
 import { formatBaht, formatDateTime, formatDeadline } from '@/utils/format'
-import { shippingSummary } from '@/utils/shipping'
+import { deliveryLabel, shippingSummary } from '@/utils/shipping'
 import { ShippingBreakdown } from './ShippingBreakdown'
 
 /** Tighter cells on phones, so the Amount column stays on screen. */
@@ -16,8 +16,9 @@ const wide = 'hidden sm:table-cell'
 export function OrderBadges({ order }: { order: Order }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
-      <OrderStatusBadge status={order.status} />
+      <OrderStatusBadge status={order.status} pickup={order.deliveryMethod === 'pickup'} />
       <Badge tone="neutral">{order.type === 'preorder' ? 'Pre-order' : 'Regular'}</Badge>
+      {order.deliveryMethod === 'pickup' && <Badge tone="info">{deliveryLabel('pickup')}</Badge>}
     </span>
   )
 }
@@ -29,8 +30,9 @@ export function OrderBadges({ order }: { order: Order }) {
  */
 export function OrderItemsTable({ order }: { order: Order }) {
   const shipping = order.shippingDetail
+  const pickup = order.deliveryMethod === 'pickup'
   // A pre-order is charged shipping when its stock arrives, once the final number of boxes is known.
-  const shippingLater = !shipping && order.type === 'preorder' && order.status !== 'cancelled'
+  const shippingLater = !pickup && !shipping && order.type === 'preorder' && order.status !== 'cancelled'
   return (
     <div className="space-y-2">
       <DataTable
@@ -42,10 +44,16 @@ export function OrderItemsTable({ order }: { order: Order }) {
         ]}
         footer={
           <>
-            <TotalRow label="Subtotal (before VAT)" value={order.subtotal} />
+            <TotalRow label="Subtotal (incl. VAT)" value={order.subtotal} />
             {shipping && (
               <>
                 <TotalRow label="Shipping" value={order.shippingFee} note={shippingSummary(shipping)} />
+                <TotalRow label="Total" value={order.total} />
+              </>
+            )}
+            {pickup && (
+              <>
+                <TotalRow label="Pick-up at warehouse" value={0} note="no shipping" muted />
                 <TotalRow label="Total" value={order.total} />
               </>
             )}

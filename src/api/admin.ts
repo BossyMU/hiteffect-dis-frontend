@@ -13,6 +13,7 @@ import type {
   RoundDetail,
   StockMovement,
   Tier,
+  TrackingStatus,
   User,
   UserStatus,
 } from '@/types'
@@ -66,7 +67,11 @@ export const adminApi = {
   orders: (query: { status?: string; type?: 'preorder' | 'regular' | 'all' } = {}) =>
     request<Order[]>('/admin/orders', { query }),
   order: (id: string) => request<Order>(`/admin/orders/${id}`),
+  /** Mark a paid order shipped (EMS, with its tracking number) or picked up (no tracking number). */
   shipOrder: (id: string, trackingNo: string) => post<Order>(`/admin/orders/${id}/ship`, { trackingNo }),
+  /** Thailand Post: the next tracking number from our assigned range (only when set up). */
+  assignTrackingNo: (id: string) => post<Order>(`/admin/orders/${id}/tracking-number`, {}),
+  tracking: (id: string) => request<TrackingStatus>(`/admin/orders/${id}/tracking`),
   cancelOrder: (id: string, reason: string) => post<Order>(`/admin/orders/${id}/cancel`, { reason }),
 
   payments: (status: PaymentStatus | 'all' = 'pending') =>

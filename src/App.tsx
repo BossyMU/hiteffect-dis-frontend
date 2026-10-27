@@ -5,6 +5,7 @@ import { CartProvider } from '@/context/CartContext'
 import { ToastProvider } from '@/context/ToastContext'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminOrdersPage from '@/pages/admin/AdminOrdersPage'
+import OrderLabelPage from '@/pages/admin/OrderLabelPage'
 import PaymentsPage from '@/pages/admin/PaymentsPage'
 import ProductPreviewPage from '@/pages/admin/ProductPreviewPage'
 import ProductsPage from '@/pages/admin/ProductsPage'
@@ -37,6 +38,10 @@ export default function App() {
             </Route>
 
             <Route element={<RequireAuth roles={['shop', 'admin']} />}>
+              {/* Printable labels: admin only, without the app's menus. */}
+              <Route element={<RequireAuth roles={['admin']} />}>
+                <Route path="/admin/orders/:id/label" element={<OrderLabelPage />} />
+              </Route>
               <Route element={<AppLayout />}>
                 <Route path={PATHS.profile} element={<ProfilePage />} />
 
