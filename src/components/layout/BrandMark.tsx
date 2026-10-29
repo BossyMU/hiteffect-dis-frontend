@@ -1,12 +1,12 @@
 import { cn } from '@/utils/cn'
 
-/** The Hit Effect wordmark (from hiteffect-frontend). */
+/** The Deck Drive Distribution logo: a transparent SVG, so it sits on any background. */
 export function BrandMark({ className }: { className?: string }) {
   return (
     <img
-      src={`${import.meta.env.BASE_URL}logo.png`}
-      alt="Hit Effect — Boardgame & TCG"
-      className={cn('h-10 w-auto object-contain', className)}
+      src={`${import.meta.env.BASE_URL}logo.svg`}
+      alt="Deck Drive Distribution"
+      className={cn('h-9 w-auto max-w-full object-contain object-left', className)}
     />
   )
 }

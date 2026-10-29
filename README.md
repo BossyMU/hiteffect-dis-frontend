@@ -119,10 +119,10 @@ src/
 
 There are two copies of the portal, each a Vercel project built from this repo, with its own backend and database:
 
-| Environment | Address                         | Vercel project                | Branch       | `VITE_APP_ENV` | Backend                                             |
-| ----------- | ------------------------------- | ----------------------------- | ------------ | -------------- | --------------------------------------------------- |
-| UAT         | https://dis-uat.hiteffect.store | `hiteffect-dis-frontend`      | `main`       | `uat`          | `https://hiteffect-dis-backend.vercel.app/api`      |
-| Production  | https://dis.hiteffect.store     | `hiteffect-dis-frontend-prod` | `production` | `production`   | `https://hiteffect-dis-backend-prod.vercel.app/api` |
+| Environment | Address                               | Vercel project                | Branch       | `VITE_APP_ENV` | Backend                                             |
+| ----------- | ------------------------------------- | ----------------------------- | ------------ | -------------- | --------------------------------------------------- |
+| UAT         | https://uat.deckdrivedistribution.com | `hiteffect-dis-frontend`      | `main`       | `uat`          | `https://hiteffect-dis-backend.vercel.app/api`      |
+| Production  | https://deckdrivedistribution.com     | `hiteffect-dis-frontend-prod` | `production` | `production`   | `https://hiteffect-dis-backend-prod.vercel.app/api` |
 
 **Releasing a change:**
 
@@ -132,4 +132,4 @@ There are two copies of the portal, each a Vercel project built from this repo, 
 
 Each project only deploys its own branch (`ignoreCommand` in `vercel.json` runs `scripts/vercel-ignore-build.sh`, which skips preview deployments). `vercel.json` also sends every path to `index.html`, so deep links work. The build fails on Vercel without `VITE_APP_ENV`, so a project can't point at the wrong backend by accident. The CI workflow (`.github/workflows/ci.yml`) runs lint, the format check and the build on every push and pull request.
 
-DNS for both addresses is at Namecheap (Advanced DNS for hiteffect.store): a CNAME record for `dis` and one for `dis-uat`, pointing where each Vercel project's Domains page says. Vercel issues the HTTPS certificates.
+DNS for both addresses is at Namecheap (Advanced DNS for deckdrivedistribution.com): an A record for `@` (production, the domain itself), a CNAME for `www` (redirects to it) and one for `uat`, pointing where each Vercel project's Domains page says. Vercel issues the HTTPS certificates. The old addresses, `dis.hiteffect.store` and `dis-uat.hiteffect.store`, redirect to the new ones.

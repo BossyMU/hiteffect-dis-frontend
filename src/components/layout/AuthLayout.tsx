@@ -18,7 +18,7 @@ export function AuthLayout({
       <div className="brand-gradient flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-md rounded-[14px] border border-sidebar-border bg-card p-8 shadow-[0_14px_34px_rgba(0,0,0,0.12)]">
           <div className="mb-6 flex flex-col items-center gap-2 text-center">
-            <BrandMark className="h-14" />
+            <BrandMark className="h-14 object-center" />
             <p className="font-mono text-[10.5px] tracking-[2px] text-muted-foreground uppercase">
               Distributor portal
             </p>

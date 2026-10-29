@@ -1,7 +1,7 @@
 /**
  * Which copy of the portal this is. Set by VITE_APP_ENV on each Vercel project:
- *   production → https://dis.hiteffect.store, the real one
- *   uat        → https://dis-uat.hiteffect.store, for testing changes before they go to production
+ *   production → https://deckdrivedistribution.com, the real one
+ *   uat        → https://uat.deckdrivedistribution.com, for testing changes before they go to production
  * `npm run dev` and builds without it count as local.
  */
 export type AppEnv = 'production' | 'uat' | 'local'

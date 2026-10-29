@@ -1,7 +1,7 @@
 name: Promote to production
 
 # Run from the Actions tab once UAT looks right: production gets exactly what is on main (and on UAT) now.
-# Vercel then deploys the production branch to https://dis.hiteffect.store.
+# Vercel then deploys the production branch to https://deckdrivedistribution.com.
 # Promote hiteffect-dis-backend first when a change needs both, so the new site never meets an old API.
 on:
   workflow_dispatch:
