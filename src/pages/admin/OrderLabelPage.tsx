@@ -2,6 +2,7 @@ import JsBarcode from 'jsbarcode'
 import { useEffect, useRef } from 'react'
 import { useParams } from 'react-router'
 import { adminApi } from '@/api'
+import { BrandMark } from '@/components/layout'
 import { LoadState } from '@/components/ui'
 import { useApiData } from '@/hooks/useApiData'
 import { usePaymentOptions } from '@/hooks/usePaymentOptions'
@@ -96,10 +97,13 @@ function Labels({ order, shop }: { order: Order; shop: User | null }) {
             </div>
           </header>
 
-          <section className="border-b border-black py-[2mm] text-[8pt]">
-            <p className="font-bold">ผู้ส่ง / FROM</p>
-            <p>Hit Effect Boardgame &amp; TCG</p>
-            <p>{pickup?.address || 'Hit Effect warehouse'}</p>
+          <section className="flex items-start justify-between gap-[3mm] border-b border-black py-[2mm] text-[8pt]">
+            <div className="min-w-0">
+              <p className="font-bold">ผู้ส่ง / FROM</p>
+              <p>Deck Drive Distribution</p>
+              <p className="whitespace-pre-line">{pickup?.address || 'Deck Drive Distribution warehouse'}</p>
+            </div>
+            <BrandMark className="h-[7mm] shrink-0" />
           </section>
 
           <section className="flex-1 py-[3mm]">

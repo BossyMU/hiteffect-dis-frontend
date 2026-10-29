@@ -9,7 +9,7 @@ interface PageHeaderProps {
   back?: { to: string; label: string }
 }
 
-/** Page title in the Hit Effect display face (Cinzel), with optional actions on the right. */
+/** Page title in the display face (Cinzel), with optional actions on the right. */
 export function PageHeader({ title, subtitle, actions, back }: PageHeaderProps) {
   return (
     <div className="space-y-2">

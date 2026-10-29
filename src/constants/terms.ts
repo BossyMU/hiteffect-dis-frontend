@@ -6,7 +6,7 @@
  * Change both whenever the text changes: shops are then asked to agree again, and each request
  * records the version it was made under.
  */
-export const TERMS_VERSION = '2026-10-27'
+export const TERMS_VERSION = '2026-10-30'
 
 export interface TermsSection {
   id: string
@@ -20,7 +20,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
     id: 'preorder',
     title: 'Pre-order terms',
     clauses: [
-      'This portal is for registered shops buying from Hit Effect at wholesale prices. Prices are per box and include VAT. The price of a pre-order is fixed when we make you an offer.',
+      'This portal is for registered shops buying from Deck Drive Distribution at wholesale prices. Prices are per box and include VAT. The price of a pre-order is fixed when we make you an offer.',
       'A request is not an order and costs nothing. It tells us how many boxes you would like. You can change or withdraw it until the request deadline.',
       'Supply from the publisher is limited. After the deadline we share the boxes between all requests using your tier and purchase history. You may be offered fewer boxes than you asked for, or none.',
       'If you are offered boxes, you can accept all or part of the offer before it expires. Accepting is a firm order. Offers you do not answer in time expire, and repeatedly letting offers expire may be taken into account in future pre-orders.',

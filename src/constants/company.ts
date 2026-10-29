@@ -24,7 +24,7 @@ const TEST_PAYMENT_DETAILS = {
   promptPay: '0000000000000',
   bankName: 'Test Bank',
   bankAccount: '000-0-00000-0',
-  accountName: 'HIT EFFECT (TEST)',
+  accountName: 'DECK DRIVE DISTRIBUTION (TEST)',
 }
 
 export const PAYMENT_DETAILS = APP_ENV === 'production' ? REAL_PAYMENT_DETAILS : TEST_PAYMENT_DETAILS

@@ -27,7 +27,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Log in" subtitle="Pre-orders and wholesale orders for Hit Effect shops">
+    <AuthLayout title="Log in" subtitle="Pre-orders and wholesale orders from Deck Drive Distribution">
       {justRegistered && (
         <p className="mb-4 rounded-md border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
           Thanks for signing up. We will approve your account and set your tier, then you can log in.

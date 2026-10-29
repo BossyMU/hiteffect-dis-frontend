@@ -5,7 +5,7 @@ type Variant = 'primary' | 'secondary' | 'soft' | 'outline' | 'destructive'
 type Size = 'sm' | 'md'
 
 const VARIANTS: Record<Variant, string> = {
-  /** Main call to action (Hit Effect orange). */
+  /** Main call to action (orange accent). */
   primary: 'bg-primary text-primary-foreground font-semibold hover:brightness-95',
   /** Cancel / close. */
   secondary: 'bg-muted text-muted-foreground hover:text-foreground',

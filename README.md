@@ -1,10 +1,10 @@
-# Hit Effect · Distributor Portal
+# Deck Drive Distribution · Distributor Portal
 
-The web app shops and admins use for Hit Effect's TCG distribution: pre-order rounds with fair allocation, offers accepted with a 30% deposit, balance payments before shipping, and regular orders from stock.
+The web app shops and admins use for Deck Drive Distribution's TCG distribution: pre-order rounds with fair allocation, offers accepted with a 30% deposit, balance payments before shipping, and regular orders from stock.
 
 Data comes from the REST API in [hiteffect-dis-backend](../hiteffect-dis-backend).
 
-It's built the same way as [stock-hiteffect-frontend](../stock-hiteffect-frontend) (stack, folder structure, components), in the Hit Effect brand from [hiteffect-frontend](../hiteffect-frontend): Inter, IBM Plex Mono and Cinzel, orange accent, cyan outlines, light surfaces, the logo, and the gradient on the login screen.
+It's built the same way as [stock-hiteffect-frontend](../stock-hiteffect-frontend) (stack, folder structure, components), with the look of [hiteffect-frontend](../hiteffect-frontend): Inter, IBM Plex Mono and Cinzel, orange accent, cyan outlines, light surfaces, and the gradient on the login screen. The logo is Deck Drive Distribution's (`public/logo.svg`, with `favicon.svg`, `favicon.ico` and `apple-touch-icon.png` for browser tabs and phones, and `email-logo.png` for the header of notification e-mails, since mail apps don't show SVG).
 
 ## Tech stack
 

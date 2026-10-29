@@ -25,7 +25,7 @@ export function PaymentDetails({ amount }: { amount: number }) {
     if (!url) return
     const link = document.createElement('a')
     link.href = url
-    link.download = `hiteffect-promptpay-${amount.toFixed(2)}.png`
+    link.download = `deckdrive-promptpay-${amount.toFixed(2)}.png`
     link.click()
   }
 

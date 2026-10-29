@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { BrandMark } from './BrandMark'
 import { EnvBanner } from './EnvBanner'
 
-/** Login and sign-up: a centred card on the Hit Effect gradient. */
+/** Login and sign-up: a centred card on the brand gradient. */
 export function AuthLayout({
   title,
   subtitle,
