@@ -29,6 +29,8 @@ import { PATHS } from '@/routes/paths'
 import type { Order, OrderStatus } from '@/types'
 import { boxes, formatBaht, formatDate, formatDeadline } from '@/utils/format'
 import { isValidTrackingNo, normalizeTrackingNo } from '@/utils/trackingNo'
+import { GameFilterNote, GameFilterSelects } from './components/GameFilter'
+import { useGameFilter } from './components/useGameFilter'
 
 export default function AdminOrdersPage() {
   const { data, status, error, reload } = useApiData(() => adminApi.orders())
@@ -36,7 +38,12 @@ export default function AdminOrdersPage() {
   const [type, setType] = useState<'all' | 'preorder' | 'regular'>('all')
   const [search, setSearch] = useState('')
   const [viewing, setViewing] = useState<Order | null>(null)
-  const orders = useMemo(() => data ?? [], [data])
+  const games = useGameFilter()
+  // The game filter applies first, so the status counts are for the chosen game.
+  const orders = useMemo(
+    () => (data ?? []).filter((o) => games.matches(o.games ?? [], o.categories ?? [])),
+    [data, games],
+  )
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -96,7 +103,9 @@ export default function AdminOrdersPage() {
           <option value="preorder">Pre-orders</option>
           <option value="regular">Regular</option>
         </Select>
+        <GameFilterSelects filter={games} onChange={() => setPage(1)} />
       </div>
+      <GameFilterNote filter={games} onChange={() => setPage(1)} />
       <LoadState status={status} error={error} onRetry={reload}>
         <DataTable
           headers={['Order', 'Shop', 'What', 'Total', 'Paid', 'Status', 'Due / ship']}

@@ -38,6 +38,8 @@ export const adminApi = {
 
   /** Products in use, or only the archived ones. */
   products: (archived = false) => request<Product[]>('/admin/products', { query: { archived } }),
+  /** Every game and category used by a product, for filters and suggestions. */
+  productFilters: () => request<{ games: string[]; categories: string[] }>('/admin/product-filters'),
   createProduct: (body: NewProduct) => post<Product>('/admin/products', body),
   updateProduct: (id: string, body: Partial<NewProduct>) => patch<Product>(`/admin/products/${id}`, body),
   /** Only for products never ordered or used in a round. */

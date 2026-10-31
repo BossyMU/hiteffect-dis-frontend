@@ -27,6 +27,8 @@ import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import type { Payment, PaymentStatus } from '@/types'
 import { formatBaht, formatDateTime } from '@/utils/format'
+import { GameFilterNote, GameFilterSelects } from './components/GameFilter'
+import { useGameFilter } from './components/useGameFilter'
 
 const FILTERS: (PaymentStatus | 'all')[] = ['pending', 'confirmed', 'rejected', 'all']
 
@@ -35,6 +37,8 @@ export default function PaymentsPage() {
   const [filter, setFilter] = useState<PaymentStatus | 'all'>('pending')
   const { data, status, error, reload } = useApiData(() => adminApi.payments(filter), [filter])
   const [reviewing, setReviewing] = useState<Payment | null>(null)
+  const games = useGameFilter()
+  const shown = (data ?? []).filter((p) => games.matches(p.games ?? [], p.categories ?? []))
 
   return (
     <div className="space-y-5">
@@ -54,13 +58,23 @@ export default function PaymentsPage() {
           </FilterChip>
         ))}
       </FilterBar>
+      <div className="flex flex-wrap gap-3">
+        <GameFilterSelects filter={games} />
+      </div>
+      <GameFilterNote filter={games} />
       <LoadState status={status} error={error} onRetry={reload}>
         <DataTable
           headers={['Sent', 'Shop', 'Order', 'Type', 'Amount', 'Method', 'Status', '']}
-          isEmpty={(data ?? []).length === 0}
-          emptyMessage={filter === 'pending' ? 'No slips waiting.' : 'Nothing here.'}
+          isEmpty={shown.length === 0}
+          emptyMessage={
+            games.active
+              ? 'Nothing for this game or category here.'
+              : filter === 'pending'
+                ? 'No slips waiting.'
+                : 'Nothing here.'
+          }
         >
-          {(data ?? []).map((p) => (
+          {shown.map((p) => (
             <TableRow key={p.id}>
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {formatDateTime(p.submittedAt)}

@@ -19,6 +19,8 @@ import type { AdminRound, RoundStatus } from '@/types'
 import { formatDate, formatDeadline } from '@/utils/format'
 import { RoundFormModal } from './components/RoundFormModal'
 import { supplyView } from './supply'
+import { GameFilterNote, GameFilterSelects } from './components/GameFilter'
+import { useGameFilter } from './components/useGameFilter'
 
 /** The date that matters next for a round. */
 function nextDate(r: AdminRound) {
@@ -41,7 +43,11 @@ export default function RoundsPage() {
   const { data, status, error, reload } = useApiData(() => adminApi.rounds())
   const [filter, setFilter] = useState<RoundStatus | 'active' | 'all'>('active')
   const [creating, setCreating] = useState(false)
-  const rounds = useMemo(() => data ?? [], [data])
+  const games = useGameFilter()
+  const rounds = useMemo(
+    () => (data ?? []).filter((r) => games.matches(r.productGame ?? '', r.productCategory ?? '')),
+    [data, games],
+  )
   const match = (r: AdminRound, f: typeof filter) =>
     f === 'all' ? true : f === 'active' ? !['closed', 'cancelled'].includes(r.status) : r.status === f
 
@@ -65,11 +71,15 @@ export default function RoundsPage() {
           </FilterChip>
         ))}
       </FilterBar>
+      <div className="flex flex-wrap gap-3">
+        <GameFilterSelects filter={games} />
+      </div>
+      <GameFilterNote filter={games} />
       <LoadState status={status} error={error} onRetry={reload}>
         <DataTable
           headers={['Round', 'Status', 'Supply', 'Left', 'Requested', 'Offered', 'Accepted', 'Next']}
           isEmpty={rounds.filter((r) => match(r, filter)).length === 0}
-          emptyMessage="No rounds here yet."
+          emptyMessage={games.active ? 'No rounds for this game or category here.' : 'No rounds here yet.'}
         >
           {rounds
             .filter((r) => match(r, filter))

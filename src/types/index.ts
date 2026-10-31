@@ -164,6 +164,8 @@ export interface RoundStats {
 }
 
 export interface AdminRound extends Round {
+  productGame: string
+  productCategory: string
   stats: RoundStats
 }
 
@@ -326,6 +328,9 @@ export interface OrderPayment {
 }
 
 export interface Order {
+  /** Games and categories of its products (an order can mix games), for the admin filter. */
+  games: string[]
+  categories: string[]
   id: string
   orderNo: string
   userId: string
@@ -364,6 +369,9 @@ export interface Order {
 }
 
 export interface Payment {
+  /** Games and categories of the products in its order, for the admin filter. */
+  games: string[]
+  categories: string[]
   id: string
   orderId: string
   orderNo: string

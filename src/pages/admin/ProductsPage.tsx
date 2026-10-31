@@ -24,6 +24,8 @@ import { PATHS } from '@/routes/paths'
 import type { NewProduct, Product, Tier } from '@/types'
 import { formatBaht, formatDateTime } from '@/utils/format'
 import { formatWeight } from '@/utils/shipping'
+import { GameFilterNote, GameFilterSelects } from './components/GameFilter'
+import { useGameFilter } from './components/useGameFilter'
 
 const CATEGORY_SUGGESTIONS = ['Booster Box', 'Decks', 'Box Set', 'Bundle', 'Accessories']
 
@@ -35,12 +37,15 @@ export default function ProductsPage() {
   const [editing, setEditing] = useState<Product | 'new' | null>(null)
   const [adjusting, setAdjusting] = useState<Product | null>(null)
 
+  const games = useGameFilter()
   const products = useMemo(() => {
     const q = search.trim().toLowerCase()
     return (data ?? []).filter(
-      (p) => !q || [p.name, p.sku, p.setCode, p.game, p.category].some((v) => v.toLowerCase().includes(q)),
+      (p) =>
+        games.matches(p.game, p.category) &&
+        (!q || [p.name, p.sku, p.setCode, p.game, p.category].some((v) => v.toLowerCase().includes(q))),
     )
-  }, [data, search])
+  }, [data, search, games])
 
   const store = (p: Product) =>
     setData((prev) =>
@@ -67,16 +72,26 @@ export default function ProductsPage() {
           Archived
         </FilterChip>
       </FilterBar>
-      <SearchInput
-        placeholder="Search by name, SKU or set…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="flex flex-wrap gap-3">
+        <SearchInput
+          placeholder="Search by name, SKU or set…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <GameFilterSelects filter={games} />
+      </div>
+      <GameFilterNote filter={games} />
       <LoadState status={status} error={error} onRetry={reload}>
         <DataTable
           headers={['Product', 'Base price', 'On hand', 'Held', 'Available', 'Shop', '']}
           isEmpty={products.length === 0}
-          emptyMessage={archived ? 'No archived products.' : 'No products yet.'}
+          emptyMessage={
+            games.active
+              ? 'No products for this game or category.'
+              : archived
+                ? 'No archived products.'
+                : 'No products yet.'
+          }
         >
           {products.map((p) => (
             <TableRow key={p.id}>
@@ -168,6 +183,7 @@ function ProductModal({
   onRemoved: (id: string) => void
 }) {
   const { run } = useToast()
+  const { data: filters } = useApiData(() => adminApi.productFilters())
   const [form, setForm] = useState({
     sku: product?.sku ?? '',
     name: product?.name ?? '',
@@ -269,7 +285,17 @@ function ProductModal({
           <TextInput id="p-name" value={form.name} onChange={(e) => set('name')(e.target.value)} />
         </Field>
         <Field label="Game" htmlFor="p-game">
-          <TextInput id="p-game" value={form.game} onChange={(e) => set('game')(e.target.value)} />
+          <TextInput
+            id="p-game"
+            list="p-games"
+            value={form.game}
+            onChange={(e) => set('game')(e.target.value)}
+          />
+          <datalist id="p-games">
+            {(filters?.games ?? []).map((g) => (
+              <option key={g} value={g} />
+            ))}
+          </datalist>
         </Field>
         <Field label="Set code" htmlFor="p-set">
           <TextInput id="p-set" value={form.setCode} onChange={(e) => set('setCode')(e.target.value)} />
