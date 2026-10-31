@@ -40,8 +40,11 @@ export function RoundFormModal({ round, onClose, onSaved }: RoundFormModalProps)
     const e: Record<string, string> = {}
     if (!form.productId) e.productId = 'Pick a product'
     if (!form.title.trim()) e.title = 'Give the round a title'
-    if (!(Number(form.totalSupply) > 0) || !Number.isInteger(Number(form.totalSupply)))
+    const supply = form.totalSupply.trim()
+    if (supply && !(Number(supply) > 0 && Number.isInteger(Number(supply))))
       e.totalSupply = 'Whole boxes, more than 0'
+    else if (!supply && round?.status === 'allocating')
+      e.totalSupply = 'Requests have closed: enter the supply to calculate the offers'
     if (!(Number(form.depositPct) > 0 && Number(form.depositPct) <= 100)) e.depositPct = '1 to 100'
     if (!form.requestDeadline || form.requestDeadline < today()) e.requestDeadline = 'Today or later'
     if (!(Number(form.offerWindowDays) >= 1)) e.offerWindowDays = 'At least 1 day'
@@ -50,7 +53,7 @@ export function RoundFormModal({ round, onClose, onSaved }: RoundFormModalProps)
     const body: NewRound = {
       productId: form.productId,
       title: form.title.trim(),
-      totalSupply: Number(form.totalSupply),
+      totalSupply: supply ? Number(supply) : null,
       depositPct: Number(form.depositPct),
       requestDeadline: form.requestDeadline,
       offerWindowHours: Number(form.offerWindowDays) * 24,
@@ -131,13 +134,14 @@ export function RoundFormModal({ round, onClose, onSaved }: RoundFormModalProps)
           label="Supply (boxes)"
           htmlFor="r-supply"
           error={errors.totalSupply}
-          hint="What the publisher will send us"
+          hint="What the publisher will send us. Leave empty until they confirm."
         >
           <TextInput
             id="r-supply"
             type="number"
             min={1}
             disabled={disabled('totalSupply')}
+            placeholder="Not known yet"
             value={form.totalSupply}
             onChange={(e) => set('totalSupply')(e.target.value)}
           />

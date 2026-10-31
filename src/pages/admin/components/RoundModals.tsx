@@ -27,7 +27,7 @@ export function AdjustModal({
   const othersTotal = round.allocations
     .filter((a) => a.id !== allocation.id && ['draft', 'offered', 'accepted'].includes(a.status))
     .reduce((s, a) => s + (a.acceptedQty ?? a.offeredQty), 0)
-  const free = round.totalSupply - othersTotal
+  const free = (round.totalSupply ?? 0) - othersTotal
 
   async function save() {
     const n = Number(qty)
@@ -96,7 +96,7 @@ export function AdjustModal({
 /** Stock arrived: how many boxes came, and when shops must pay and when we ship. */
 export function ArriveModal({ round, onClose, onSaved }: ModalProps) {
   const { run } = useToast()
-  const [received, setReceived] = useState(String(round.totalSupply))
+  const [received, setReceived] = useState(String(round.totalSupply ?? ''))
   const [paymentDeadline, setPaymentDeadline] = useState(addDays(today(), 5))
   const [shipDate, setShipDate] = useState(addDays(today(), 7))
   const [note, setNote] = useState('')

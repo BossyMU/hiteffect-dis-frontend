@@ -89,7 +89,9 @@ export default function RoundsPage() {
                     <p className="mt-1 text-xs text-warning">{r.stats.pendingDeposits} slip(s) to check</p>
                   )}
                 </TableCell>
-                <TableCell className="font-mono">{r.totalSupply}</TableCell>
+                <TableCell className="font-mono">
+                  {r.totalSupply ?? <span className="text-muted-foreground">Not set</span>}
+                </TableCell>
                 <TableCell>
                   <SupplyLeft round={r} />
                 </TableCell>
@@ -120,7 +122,7 @@ export default function RoundsPage() {
 /** Boxes of the supply still free, with a tiny bar: how full the round is at a glance. */
 function SupplyLeft({ round }: { round: AdminRound }) {
   const v = supplyView(round)
-  if (round.status === 'cancelled') return <span className="text-muted-foreground">—</span>
+  if (round.status === 'cancelled' || !v) return <span className="text-muted-foreground">—</span>
   const usedPct = v.supply > 0 ? Math.min(100, ((v.supply - v.left) / v.supply) * 100) : 0
   return (
     <div className="min-w-16" title={`${v.left} of ${v.supply} boxes left: ${v.leftLabel}`}>

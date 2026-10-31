@@ -17,6 +17,7 @@ const FILL: Record<SupplyPart['key'], string> = {
  */
 export function SupplyCard({ round }: { round: AdminRound }) {
   const v = supplyView(round)
+  if (!v) return <NoSupplyCard round={round} />
   const scale = Math.max(v.supply, 1)
   // When requests go over the supply, the bar is full and the overflow is said in words.
   const shown = v.parts.map((p) => ({ ...p, width: Math.min(p.qty, v.supply) / scale }))
@@ -74,6 +75,31 @@ export function SupplyCard({ round }: { round: AdminRound }) {
           <span className="font-mono font-semibold">{v.left}</span>
         </li>
       </ul>
+    </Card>
+  )
+}
+
+/**
+ * Before the publisher confirms the supply: what shops have asked for so far, which is the number to
+ * send the publisher, and what happens next.
+ */
+function NoSupplyCard({ round }: { round: AdminRound }) {
+  const { requestedTotal, preorderCount } = round.stats
+  const closed = round.status !== 'draft' && round.status !== 'open'
+  return (
+    <Card className="space-y-2">
+      <SectionTitle>Supply</SectionTitle>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <p className="font-mono text-3xl font-semibold">{requestedTotal}</p>
+        <p className="text-sm text-muted-foreground">
+          boxes requested{closed ? '' : ' so far'} by {preorderCount} shop{preorderCount === 1 ? '' : 's'}
+        </p>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {closed
+          ? 'Requests are closed. Send this total to the publisher, and enter the supply they confirm to calculate the offers.'
+          : 'The supply is not set yet. Requests close at the deadline as usual; offers are calculated once you enter the supply the publisher confirms (Edit).'}
+      </p>
     </Card>
   )
 }

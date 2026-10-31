@@ -26,8 +26,9 @@ export interface SupplyView {
  *   offering    boxes neither accepted nor waiting on a shop's answer (not offered, declined, expired)
  *   later       boxes no shop took; they become regular stock when the stock arrives
  */
-export function supplyView(r: AdminRound): SupplyView {
+export function supplyView(r: AdminRound): SupplyView | null {
   const supply = r.receivedQty ?? r.totalSupply
+  if (supply == null) return null
   const s = r.stats
   let parts: SupplyPart[]
   let leftLabel: string

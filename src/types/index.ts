@@ -125,7 +125,8 @@ export interface Round {
   productSku: string
   productImageUrl: string
   title: string
-  totalSupply: number
+  /** Boxes the publisher will send us; null until they confirm. */
+  totalSupply: number | null
   receivedQty: number | null
   depositPct: number
   status: RoundStatus
@@ -219,7 +220,8 @@ export interface RoundDetail extends AdminRound {
 export interface NewRound {
   productId: string
   title: string
-  totalSupply: number
+  /** Boxes the publisher will send us; null until they confirm. */
+  totalSupply: number | null
   depositPct: number
   requestDeadline: string
   offerWindowHours: number

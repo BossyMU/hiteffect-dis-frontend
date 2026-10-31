@@ -104,7 +104,13 @@ export default function RoundDetailPage() {
                       </Link>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{ROUND_STATUS[round.status].help}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {round.status === 'allocating' && round.totalSupply == null
+                      ? 'Requests are closed. Enter the supply the publisher confirms to calculate the offers.'
+                      : round.status === 'allocating' && !calculated(round)
+                        ? 'Requests are closed. Calculate the offers, review them, then publish.'
+                        : ROUND_STATUS[round.status].help}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <NextActions round={round} busy={busy} act={act} openModal={setModal} />
@@ -127,8 +133,14 @@ export default function RoundDetailPage() {
             <StatGrid className="lg:grid-cols-5">
               <StatCard
                 label="Supply"
-                value={String(round.totalSupply)}
-                sub={round.receivedQty != null ? `${round.receivedQty} arrived` : 'boxes expected'}
+                value={round.totalSupply == null ? '—' : String(round.totalSupply)}
+                sub={
+                  round.receivedQty != null
+                    ? `${round.receivedQty} arrived`
+                    : round.totalSupply == null
+                      ? 'not set yet'
+                      : 'boxes expected'
+                }
               />
               <StatCard
                 label="Requested"
@@ -241,7 +253,20 @@ function NextActions({
         </Button>
       )
     case 'open':
-      return (
+      return round.totalSupply == null ? (
+        <Button
+          disabled={busy}
+          onClick={() =>
+            void act(
+              () => adminApi.allocate(round.id),
+              'Requests closed',
+              'Close requests now? Offers are calculated once you enter the supply. (Requests also close on their own at the deadline.)',
+            )
+          }
+        >
+          Close requests
+        </Button>
+      ) : (
         <Button
           disabled={busy}
           onClick={() =>
@@ -256,6 +281,19 @@ function NextActions({
         </Button>
       )
     case 'allocating':
+      if (round.totalSupply == null) {
+        return <Button onClick={() => openModal('edit')}>Enter supply</Button>
+      }
+      if (!calculated(round)) {
+        return (
+          <Button
+            disabled={busy}
+            onClick={() => void act(() => adminApi.allocate(round.id), 'Offers calculated')}
+          >
+            Calculate offers
+          </Button>
+        )
+      }
       return (
         <>
           <Button
@@ -429,4 +467,9 @@ function AllocationTable({
       </DataTable>
     </div>
   )
+}
+
+/** Offers have been calculated (or there were no requests to calculate). */
+function calculated(round: RoundDetail) {
+  return round.allocations.length > 0 || round.stats.preorderCount === 0
 }
