@@ -4,7 +4,6 @@ import { shopApi } from '@/api'
 import { TermsModal } from '@/components/terms/TermsModal'
 import { TERMS_VERSION } from '@/constants/terms'
 import { Button, LoadState } from '@/components/ui'
-import { useUser } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
@@ -41,7 +40,6 @@ export default function PreorderDetailPage() {
 }
 
 function PreorderDetail({ round: r, onChanged }: { round: ShopRound; onChanged: (r?: ShopRound) => void }) {
-  const user = useUser()
   const state = preorderState(r)
   const deadline = nextDeadline(r)
   const inCatalog = isTakingRequests(r)
@@ -71,8 +69,8 @@ function PreorderDetail({ round: r, onChanged }: { round: ShopRound; onChanged: 
       <div>
         <p className="font-mono text-2xl font-semibold">{formatBaht(r.unitPrice)}</p>
         <p className="text-xs text-muted-foreground">
-          Per box, including VAT · {user.tierName ?? 'your'} tier price · {r.depositPct}% deposit when you
-          accept your offer
+          Per box, including VAT · {r.tierName ?? 'your'} tier price · {r.depositPct}% deposit when you accept
+          your offer
         </p>
       </div>
 

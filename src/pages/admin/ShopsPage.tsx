@@ -65,7 +65,16 @@ export default function ShopsPage() {
 
       <LoadState status={status} error={error} onRetry={reload}>
         <DataTable
-          headers={['Shop', 'Status', 'Tier', 'History bonus', 'Expired offers', 'Joined', '']}
+          headers={[
+            'Shop',
+            'Status',
+            'Shop tier',
+            'Tier by game',
+            'History bonus',
+            'Expired offers',
+            'Joined',
+            '',
+          ]}
           isEmpty={shown.length === 0}
           emptyMessage="No shops here."
         >
@@ -79,6 +88,20 @@ export default function ShopsPage() {
                 <UserStatusBadge status={s.status} />
               </TableCell>
               <TableCell className="text-sm">{s.tierName ?? '—'}</TableCell>
+              <TableCell className="text-xs">
+                {(s.gameTiers ?? []).length === 0 ? (
+                  <span className="text-muted-foreground">{s.startingTierName ?? '—'} in every game</span>
+                ) : (
+                  <>
+                    {(s.gameTiers ?? []).map((g) => (
+                      <p key={g.game}>
+                        {g.game || 'No game'}: <span className="font-semibold">{g.tierName}</span>
+                      </p>
+                    ))}
+                    <p className="text-muted-foreground">Others: {s.startingTierName}</p>
+                  </>
+                )}
+              </TableCell>
               <TableCell className="font-mono text-sm">×{s.historyFactor.toFixed(2)}</TableCell>
               <TableCell className="font-mono text-sm">{s.expiredOffers}</TableCell>
               <TableCell className="font-mono text-xs text-muted-foreground">
@@ -109,8 +132,10 @@ export default function ShopsPage() {
           Tiers
         </SectionTitle>
         <p className="text-sm text-muted-foreground">
-          A shop's weight is its tier weight × its history bonus. Higher weight means a bigger share when
-          supply is short. The optional limit caps how many boxes one shop can request per round.
+          Each shop has a tier per game (in a game new to it, the lowest tier). Its tier in a product's game
+          sets its price, and its weight in that game's rounds: tier weight × history bonus, so a higher
+          weight means a bigger share when supply is short. The optional limit caps how many boxes one shop
+          can request per round. The shop tier is only a label on the shop's account.
         </p>
         <DataTable headers={['Tier', 'Weight', 'Request limit', 'Active shops', '']}>
           {tiers.map((t) => (
@@ -171,12 +196,26 @@ function ShopModal({
   const [status, setStatus] = useState<UserStatus>(shop.status === 'pending' ? 'approved' : shop.status)
   const [tierId, setTierId] = useState(shop.tierId ? String(shop.tierId) : '')
   const [factor, setFactor] = useState(shop.historyFactor.toFixed(2))
+  const { data: filters } = useApiData(() => adminApi.productFilters())
+  const lowest = [...tiers].sort((a, b) => a.weight - b.weight || a.sortOrder - b.sortOrder || a.id - b.id)[0]
+  const key = (g: string) => g.trim().replace(/\s+/g, ' ').toLowerCase()
+  const [byGame, setByGame] = useState<Record<string, { game: string; tierId: number }>>(() =>
+    Object.fromEntries((shop.gameTiers ?? []).map((g) => [key(g.game), { game: g.game, tierId: g.tierId }])),
+  )
+  // Every game we sell, plus any the shop has a tier for that no product uses any more.
+  const games = [
+    ...new Map(
+      [...(filters?.games ?? []), ...(shop.gameTiers ?? []).map((g) => g.game)].map(
+        (g) => [key(g), g] as const,
+      ),
+    ).values(),
+  ].sort((a, b) => (a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function save() {
     const f = Number(factor)
-    if (status === 'approved' && !tierId) return setError('Pick a tier before approving')
+    if (status === 'approved' && !tierId) return setError('Pick a shop tier before approving')
     if (!(f >= 1 && f <= 1.5)) return setError('The history bonus is between 1.00 and 1.50')
     setBusy(true)
     let saved: User | null = null
@@ -186,6 +225,7 @@ function ShopModal({
           status,
           tierId: tierId ? Number(tierId) : null,
           historyFactor: f,
+          gameTiers: Object.values(byGame),
         })
       },
       status === 'approved' && shop.status === 'pending' ? `${shop.shopName} approved` : 'Shop saved',
@@ -231,7 +271,7 @@ function ShopModal({
               <option value="suspended">Suspended</option>
             </Select>
           </Field>
-          <Field label="Tier" htmlFor="shop-tier">
+          <Field label="Shop tier" htmlFor="shop-tier" hint="A label on the account">
             <Select
               id="shop-tier"
               value={tierId}
@@ -243,7 +283,7 @@ function ShopModal({
               <option value="">No tier</option>
               {tiers.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name} (×{t.weight})
+                  {t.name}
                 </option>
               ))}
             </Select>
@@ -262,6 +302,42 @@ function ShopModal({
               }}
             />
           </Field>
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Tier by game</p>
+          <p className="text-xs text-muted-foreground">
+            Sets the shop's price, request limit and share in each game. A game new to the shop starts at{' '}
+            {lowest?.name ?? 'the lowest tier'}.
+          </p>
+          {games.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No products with a game yet.</p>
+          ) : (
+            <div className="divide-y divide-border rounded-md border border-border">
+              {games.map((game) => {
+                const current = byGame[key(game)]?.tierId ?? lowest?.id
+                return (
+                  <div key={key(game)} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span className="text-sm">{game || 'Products with no game'}</span>
+                    <Select
+                      aria-label={`Tier in ${game || 'products with no game'}`}
+                      value={current ?? ''}
+                      onChange={(e) =>
+                        setByGame((m) => ({ ...m, [key(game)]: { game, tierId: Number(e.target.value) } }))
+                      }
+                      className="w-auto"
+                    >
+                      {tiers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                          {t.id === lowest?.id ? ' (starting tier)' : ''}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
         {shop.status === 'pending' && (

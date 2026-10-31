@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { shopApi } from '@/api'
 import { FilterChip, LoadState, Pagination } from '@/components/ui'
-import { useUser } from '@/context/AuthContext'
 import { orderLimit, useCart } from '@/context/CartContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
@@ -18,7 +17,6 @@ const fields = (p: ShopProduct) => p
 
 /** The Products tab: a card grid of products sold from stock, with a cart. */
 export default function ProductsPage() {
-  const user = useUser()
   const cart = useCart()
   const params = useCatalogParams()
   const { data, status, error, reload } = useApiData(() => shopApi.products())
@@ -52,8 +50,8 @@ export default function ProductsPage() {
 
       <LoadState status={status} error={error} onRetry={reload}>
         <p className="font-mono text-xs text-muted-foreground">
-          {filtered.length} product{filtered.length === 1 ? '' : 's'} · {user.tierName ?? ''} tier prices per
-          box, including VAT
+          {filtered.length} product{filtered.length === 1 ? '' : 's'} · your tier prices per box (by game),
+          including VAT
         </p>
         {filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">No products match.</p>

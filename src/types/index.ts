@@ -17,8 +17,13 @@ export interface User {
   contactName: string
   phone: string
   address: string
+  /** The shop's own tier: a label, with no effect on prices or allocation. */
   tierId: number | null
   tierName: string | null
+  /** The shop's tier in each game where it is above the starting tier ('' = products with no game). */
+  gameTiers: { game: string; tierId: number; tierName: string }[]
+  /** The lowest tier, which every shop has in a game not listed in gameTiers. */
+  startingTierName: string | null
   historyFactor: number
   expiredOffers: number
   legalName: string
@@ -92,6 +97,8 @@ export type NewProduct = Omit<
 
 /** A product as a shop sees it: its own tier price and what is available now. */
 export interface ShopProduct {
+  /** The shop's tier in this product's game. */
+  tierName: string | null
   id: string
   sku: string
   name: string
@@ -242,6 +249,8 @@ export interface NewRound {
 
 /** A round as a shop sees it, with its own request, offer and order. */
 export interface ShopRound extends Round {
+  /** The shop's tier in this product's game. */
+  tierName: string | null
   productGame: string
   productSetCode: string
   productCategory: string

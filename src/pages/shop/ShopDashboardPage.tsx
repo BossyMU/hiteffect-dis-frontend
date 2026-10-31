@@ -47,21 +47,41 @@ export default function ShopDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <NotificationList />
-        <Card className="space-y-3">
-          <SectionTitle>How pre-orders work</SectionTitle>
-          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
-            <li>Request the boxes you want before the deadline. No payment yet.</li>
-            <li>We split the supply fairly between shops, by tier.</li>
-            <li>Accept your offer by paying a 30% deposit.</li>
-            <li>We confirm your deposit.</li>
-            <li>When stock arrives, pay the balance before the payment deadline.</li>
-            <li>We confirm your payment.</li>
-            <li>We ship paid orders.</li>
-          </ol>
-          <p className="text-xs text-muted-foreground">
-            Every deadline is 23:59 Bangkok time on the date shown.
-          </p>
-        </Card>
+        <div className="space-y-6">
+          <Card className="space-y-3">
+            <SectionTitle>Your tier by game</SectionTitle>
+            <ul className="space-y-1 text-sm">
+              {(user.gameTiers ?? []).map((g) => (
+                <li key={g.game} className="flex justify-between gap-3">
+                  <span>{g.game || 'Other products'}</span>
+                  <span className="font-semibold">{g.tierName}</span>
+                </li>
+              ))}
+              <li className="flex justify-between gap-3 text-muted-foreground">
+                <span>{user.gameTiers?.length ? 'Other games' : 'Every game'}</span>
+                <span>{user.startingTierName ?? '—'}</span>
+              </li>
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              Your tier in a game sets your prices and your share of its pre-orders.
+            </p>
+          </Card>
+          <Card className="space-y-3">
+            <SectionTitle>How pre-orders work</SectionTitle>
+            <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+              <li>Request the boxes you want before the deadline. No payment yet.</li>
+              <li>We split the supply fairly between shops, by their tier in that game.</li>
+              <li>Accept your offer by paying a 30% deposit.</li>
+              <li>We confirm your deposit.</li>
+              <li>When stock arrives, pay the balance before the payment deadline.</li>
+              <li>We confirm your payment.</li>
+              <li>We ship paid orders.</li>
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              Every deadline is 23:59 Bangkok time on the date shown.
+            </p>
+          </Card>
+        </div>
       </div>
     </div>
   )

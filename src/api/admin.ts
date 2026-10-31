@@ -27,8 +27,15 @@ export const adminApi = {
   runDeadlines: () => post<DeadlineRunResult>('/admin/run-deadlines'),
 
   shops: (status: UserStatus | 'all' = 'all') => request<User[]>('/admin/shops', { query: { status } }),
-  updateShop: (id: string, body: { status?: UserStatus; tierId?: number | null; historyFactor?: number }) =>
-    patch<User>(`/admin/shops/${id}`, body),
+  updateShop: (
+    id: string,
+    body: {
+      status?: UserStatus
+      tierId?: number | null
+      historyFactor?: number
+      gameTiers?: { game: string; tierId: number }[]
+    },
+  ) => patch<User>(`/admin/shops/${id}`, body),
 
   tiers: () => request<Tier[]>('/admin/tiers'),
   createTier: (body: Pick<Tier, 'name' | 'weight' | 'maxPreorderQty' | 'sortOrder'>) =>

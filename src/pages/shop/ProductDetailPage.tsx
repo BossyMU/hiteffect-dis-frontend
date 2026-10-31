@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { shopApi } from '@/api'
 import { LoadState } from '@/components/ui'
-import { useUser } from '@/context/AuthContext'
 import { orderLimit, useCart } from '@/context/CartContext'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
@@ -32,7 +31,6 @@ export default function ProductDetailPage() {
 }
 
 function ProductDetail({ product: p }: { product: ShopProduct }) {
-  const user = useUser()
   const cart = useCart()
   const { showSuccess } = useToast()
   const limit = orderLimit(p)
@@ -68,7 +66,7 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
       <div>
         <p className="font-mono text-2xl font-semibold">{formatBaht(p.price)}</p>
         <p className="text-xs text-muted-foreground">
-          Per box, including VAT · {user.tierName ?? 'your'} tier price
+          Per box, including VAT · {p.tierName ?? 'your'} tier price
         </p>
       </div>
 
