@@ -36,9 +36,14 @@ export const adminApi = {
   updateTier: (id: number, body: Partial<Pick<Tier, 'name' | 'weight' | 'maxPreorderQty' | 'sortOrder'>>) =>
     patch<Tier>(`/admin/tiers/${id}`, body),
 
-  products: () => request<Product[]>('/admin/products'),
+  /** Products in use, or only the archived ones. */
+  products: (archived = false) => request<Product[]>('/admin/products', { query: { archived } }),
   createProduct: (body: NewProduct) => post<Product>('/admin/products', body),
   updateProduct: (id: string, body: Partial<NewProduct>) => patch<Product>(`/admin/products/${id}`, body),
+  /** Only for products never ordered or used in a round. */
+  deleteProduct: (id: string) => request<void>(`/admin/products/${id}`, { method: 'DELETE' }),
+  archiveProduct: (id: string) => post<Product>(`/admin/products/${id}/archive`),
+  restoreProduct: (id: string) => post<Product>(`/admin/products/${id}/restore`),
   adjustStock: (id: string, qty: number, note: string) =>
     post<Product>(`/admin/products/${id}/stock`, { qty, note }),
   movements: (id: string) => request<StockMovement[]>(`/admin/products/${id}/movements`),

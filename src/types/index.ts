@@ -75,11 +75,18 @@ export interface Product {
   /** Weight of one box, for shipping. Null: the backend's default (1 kg). */
   weightGrams: number | null
   isListed: boolean
+  /** Set when archived: hidden from shops, the product list and new rounds. */
+  archivedAt: string | null
+  /** Orders or pre-order rounds use it, so it can be archived but not deleted. */
+  hasHistory: boolean
   createdAt: string
   tierPrices: TierPrice[]
 }
 
-export type NewProduct = Omit<Product, 'id' | 'stockOnHand' | 'stockReserved' | 'available' | 'createdAt'>
+export type NewProduct = Omit<
+  Product,
+  'id' | 'stockOnHand' | 'stockReserved' | 'available' | 'createdAt' | 'archivedAt' | 'hasHistory'
+>
 
 /** A product as a shop sees it: its own tier price and what is available now. */
 export interface ShopProduct {

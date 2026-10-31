@@ -6,6 +6,8 @@ import {
   Button,
   DataTable,
   Field,
+  FilterBar,
+  FilterChip,
   LoadState,
   Modal,
   ModalActions,
@@ -26,7 +28,8 @@ import { formatWeight } from '@/utils/shipping'
 const CATEGORY_SUGGESTIONS = ['Booster Box', 'Decks', 'Box Set', 'Bundle', 'Accessories']
 
 export default function ProductsPage() {
-  const { data, setData, status, error, reload } = useApiData(() => adminApi.products())
+  const [archived, setArchived] = useState(false)
+  const { data, setData, status, error, reload } = useApiData(() => adminApi.products(archived), [archived])
   const { data: tiers } = useApiData(() => adminApi.tiers())
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<Product | 'new' | null>(null)
@@ -43,6 +46,11 @@ export default function ProductsPage() {
     setData((prev) =>
       prev?.some((x) => x.id === p.id) ? prev.map((x) => (x.id === p.id ? p : x)) : [p, ...(prev ?? [])],
     )
+  /** Deleted, archived or restored: it leaves the list being shown. */
+  const drop = (id: string) => {
+    setData((prev) => prev?.filter((x) => x.id !== id) ?? prev)
+    setEditing(null)
+  }
 
   return (
     <div className="space-y-5">
@@ -51,6 +59,14 @@ export default function ProductsPage() {
         subtitle="Counted in boxes. Available = on hand − held for orders."
         actions={<Button onClick={() => setEditing('new')}>+ New product</Button>}
       />
+      <FilterBar>
+        <FilterChip active={!archived} onClick={() => setArchived(false)}>
+          In use
+        </FilterChip>
+        <FilterChip active={archived} onClick={() => setArchived(true)}>
+          Archived
+        </FilterChip>
+      </FilterBar>
       <SearchInput
         placeholder="Search by name, SKU or set…"
         value={search}
@@ -60,7 +76,7 @@ export default function ProductsPage() {
         <DataTable
           headers={['Product', 'Base price', 'On hand', 'Held', 'Available', 'Shop', '']}
           isEmpty={products.length === 0}
-          emptyMessage="No products yet."
+          emptyMessage={archived ? 'No archived products.' : 'No products yet.'}
         >
           {products.map((p) => (
             <TableRow key={p.id}>
@@ -83,7 +99,13 @@ export default function ProductsPage() {
               <TableCell className="font-mono text-muted-foreground">{p.stockReserved}</TableCell>
               <TableCell className="font-mono font-semibold">{p.available}</TableCell>
               <TableCell>
-                {p.isListed ? <Badge tone="success">Listed</Badge> : <Badge tone="neutral">Hidden</Badge>}
+                {p.archivedAt ? (
+                  <Badge tone="neutral">Archived</Badge>
+                ) : p.isListed ? (
+                  <Badge tone="success">Listed</Badge>
+                ) : (
+                  <Badge tone="neutral">Hidden</Badge>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
@@ -114,6 +136,7 @@ export default function ProductsPage() {
             store(p)
             setEditing(null)
           }}
+          onRemoved={drop}
         />
       )}
       {adjusting && (
@@ -135,11 +158,14 @@ function ProductModal({
   tiers,
   onClose,
   onSaved,
+  onRemoved,
 }: {
   product: Product | null
   tiers: Tier[]
   onClose: () => void
   onSaved: (p: Product) => void
+  /** Deleted, archived or restored: no longer in the list being shown. */
+  onRemoved: (id: string) => void
 }) {
   const { run } = useToast()
   const [form, setForm] = useState({
@@ -215,7 +241,10 @@ function ProductModal({
       onClose={onClose}
       className="max-w-2xl"
       footer={
-        <ModalActions onCancel={onClose} onConfirm={() => void save()} confirmLabel="Save" busy={busy} />
+        <>
+          {product && <RemoveAction product={product} onDone={onRemoved} />}
+          <ModalActions onCancel={onClose} onConfirm={() => void save()} confirmLabel="Save" busy={busy} />
+        </>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
@@ -351,6 +380,77 @@ function ProductModal({
         </div>
       </div>
     </Modal>
+  )
+}
+
+/**
+ * Bottom-left of the product editor: Delete for a product nothing uses (created by mistake), Archive
+ * for one with orders or rounds (its history stays), Restore for an archived one.
+ */
+function RemoveAction({ product, onDone }: { product: Product; onDone: (id: string) => void }) {
+  const { run } = useToast()
+  const [busy, setBusy] = useState(false)
+
+  async function act(confirm: string, action: () => Promise<unknown>, success: string) {
+    if (!window.confirm(confirm)) return
+    setBusy(true)
+    const ok = await run(action, success)
+    setBusy(false)
+    if (ok) onDone(product.id)
+  }
+
+  const className = 'mr-auto'
+  if (product.archivedAt) {
+    return (
+      <Button
+        variant="outline"
+        className={className}
+        disabled={busy}
+        onClick={() =>
+          void act(
+            `Restore ${product.name}? It comes back to your product list${product.isListed ? ' and to shops' : ''}.`,
+            () => adminApi.restoreProduct(product.id),
+            'Product restored',
+          )
+        }
+      >
+        Restore
+      </Button>
+    )
+  }
+  if (product.hasHistory) {
+    return (
+      <Button
+        variant="secondary"
+        className={className}
+        disabled={busy}
+        onClick={() =>
+          void act(
+            `Archive ${product.name}?\n\nShops can no longer see or order it, and it leaves your product list and the list for new pre-order rounds. Its orders and history stay, and you can restore it from Archived.`,
+            () => adminApi.archiveProduct(product.id),
+            'Product archived',
+          )
+        }
+      >
+        Archive…
+      </Button>
+    )
+  }
+  return (
+    <Button
+      variant="destructive"
+      className={className}
+      disabled={busy}
+      onClick={() =>
+        void act(
+          `Delete ${product.name} for good?\n\nIt has never been ordered or used in a pre-order round. This cannot be undone.`,
+          () => adminApi.deleteProduct(product.id),
+          'Product deleted',
+        )
+      }
+    >
+      Delete…
+    </Button>
   )
 }
 
