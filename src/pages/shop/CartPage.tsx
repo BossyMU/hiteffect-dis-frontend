@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { errorMessage, shopApi } from '@/api'
 import { DeliveryChoice, PickupPlace, ShippingBreakdown } from '@/components/orders'
 import { Button, Card, Field, LoadState, PageHeader, TextArea } from '@/components/ui'
-import { orderLimit, useCart, type CartLine } from '@/context/CartContext'
+import { limitLeft, orderLimit, useCart, type CartLine } from '@/context/CartContext'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
@@ -244,13 +244,19 @@ function CartRow({
           <p className="font-mono text-sm font-semibold">{unavailable ? '—' : formatBaht(c.qty * p.price)}</p>
         </div>
         {unavailable ? (
-          <p className="text-sm text-danger">No longer available.</p>
+          <p className="text-sm text-danger">
+            {p && p.available > 0 && limitLeft(p) === 0
+              ? `You have reached the limit of ${p.maxPerOrder} for this product.`
+              : 'No longer available.'}
+          </p>
         ) : (
           <>
             <QtyStepper value={c.qty} max={c.limit} onChange={onQty} label={p.name} className="w-36" />
             {c.line.qty > c.limit && (
               <p className="text-xs text-warning">
-                Only {boxes(c.limit)} available, so we lowered the quantity.
+                {c.limit < p.available
+                  ? `You can order ${boxes(c.limit)} more (limit ${p.maxPerOrder} per shop), so we lowered the quantity.`
+                  : `Only ${boxes(c.limit)} available, so we lowered the quantity.`}
               </p>
             )}
             {p.price !== c.line.price && (

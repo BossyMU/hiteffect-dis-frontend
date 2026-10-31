@@ -19,6 +19,11 @@ import type {
 } from '@/types'
 import { request } from './client'
 
+export interface LimitUsage {
+  maxPerOrder: number | null
+  shops: { userId: string; shopName: string; email: string; ordered: number; locked: boolean }[]
+}
+
 const post = <T>(path: string, body: unknown = {}) => request<T>(path, { method: 'POST', body })
 const patch = <T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH', body })
 
@@ -52,6 +57,11 @@ export const adminApi = {
   /** Only for products never ordered or used in a round. */
   deleteProduct: (id: string) => request<void>(`/admin/products/${id}`, { method: 'DELETE' }),
   archiveProduct: (id: string) => post<Product>(`/admin/products/${id}/archive`),
+  /** Shops that have ordered a limited product since their last unlock. */
+  limitUsage: (id: string) => request<LimitUsage>(`/admin/products/${id}/limit`),
+  /** Start the count again for one shop, or for every shop without `userId`. */
+  unlockLimit: (id: string, userId?: string) =>
+    post<LimitUsage>(`/admin/products/${id}/limit/unlock`, userId ? { userId } : {}),
   restoreProduct: (id: string) => post<Product>(`/admin/products/${id}/restore`),
   adjustStock: (id: string, qty: number, note: string) =>
     post<Product>(`/admin/products/${id}/stock`, { qty, note }),

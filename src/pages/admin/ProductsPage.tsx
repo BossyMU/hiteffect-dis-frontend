@@ -36,6 +36,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<Product | 'new' | null>(null)
   const [adjusting, setAdjusting] = useState<Product | null>(null)
+  const [limits, setLimits] = useState<Product | null>(null)
 
   const games = useGameFilter()
   const products = useMemo(() => {
@@ -102,6 +103,7 @@ export default function ProductsPage() {
                   {p.setCode && ` · ${p.setCode}`}
                   {p.category && ` · ${p.category}`}
                   {p.tierPrices.length > 0 && ' · tier prices'}
+                  {p.maxPerOrder != null && ` · limit ${p.maxPerOrder}/shop`}
                   {p.weightGrams ? (
                     ` · ${formatWeight(p.weightGrams)}/box`
                   ) : (
@@ -130,6 +132,16 @@ export default function ProductsPage() {
                   <Button size="sm" variant="secondary" onClick={() => setAdjusting(p)}>
                     Stock
                   </Button>
+                  {p.maxPerOrder != null && (
+                    <Button size="sm" variant="secondary" onClick={() => setLimits(p)}>
+                      Limit
+                      {p.shopsAtLimit > 0 && (
+                        <span className="ml-1 rounded bg-warning/20 px-1 font-semibold text-warning">
+                          {p.shopsAtLimit}
+                        </span>
+                      )}
+                    </Button>
+                  )}
                   <Link
                     to={PATHS.adminPreviewProduct(p.id)}
                     className="self-center px-1 text-sm font-semibold text-info hover:underline"
@@ -152,6 +164,15 @@ export default function ProductsPage() {
             setEditing(null)
           }}
           onRemoved={drop}
+        />
+      )}
+      {limits && (
+        <LimitModal
+          product={limits}
+          onClose={() => {
+            setLimits(null)
+            void reload()
+          }}
         />
       )}
       {adjusting && (
@@ -331,7 +352,11 @@ function ProductModal({
             onChange={(e) => set('boxesPerCase')(e.target.value)}
           />
         </Field>
-        <Field label="Max per regular order" htmlFor="p-max" hint="Empty = no limit">
+        <Field
+          label="Limit per shop"
+          htmlFor="p-max"
+          hint="Counts all of a shop's orders; then locked until you unlock it. Empty = no limit."
+        >
           <TextInput
             id="p-max"
             type="number"
@@ -477,6 +502,95 @@ function RemoveAction({ product, onDone }: { product: Product; onDone: (id: stri
     >
       Delete…
     </Button>
+  )
+}
+
+/**
+ * Who has ordered a limited product, and who has reached the limit (locked out of it). Unlock one
+ * shop, or every shop at once (for example when a new batch arrives): its count starts again.
+ */
+function LimitModal({ product, onClose }: { product: Product; onClose: () => void }) {
+  const { run } = useToast()
+  const { data, setData, status, error, reload } = useApiData(
+    () => adminApi.limitUsage(product.id),
+    [product.id],
+  )
+  const [busy, setBusy] = useState(false)
+
+  async function unlock(userId?: string, shopName?: string) {
+    const confirm = userId
+      ? `Unlock ${product.name} for ${shopName}? Its count starts again, so it can order up to ${product.maxPerOrder} more.`
+      : `Unlock ${product.name} for every shop? Every count starts again, so each shop can order up to ${product.maxPerOrder} more.`
+    if (!window.confirm(confirm)) return
+    setBusy(true)
+    await run(async () => setData(await adminApi.unlockLimit(product.id, userId)), 'Unlocked')
+    setBusy(false)
+  }
+
+  return (
+    <Modal
+      title={`Limit: ${product.name}`}
+      onClose={onClose}
+      className="max-w-2xl"
+      footer={
+        <>
+          <Button
+            variant="outline"
+            className="mr-auto"
+            disabled={busy || !data?.shops.length}
+            onClick={() => void unlock()}
+          >
+            Unlock everyone
+          </Button>
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Each shop can order {product.maxPerOrder} of this product in total, across all its orders (cancelled
+          ones don't count). A shop that reaches it can't order more until you unlock it.
+        </p>
+        <LoadState status={status} error={error} onRetry={reload}>
+          <DataTable
+            headers={['Shop', 'Ordered', '', '']}
+            isEmpty={(data?.shops ?? []).length === 0}
+            emptyMessage="No shop has ordered it since the last unlock."
+          >
+            {(data?.shops ?? []).map((s) => (
+              <TableRow key={s.userId}>
+                <TableCell>
+                  <p className="font-medium">{s.shopName}</p>
+                  <p className="font-mono text-xs text-muted-foreground">{s.email}</p>
+                </TableCell>
+                <TableCell className="font-mono">
+                  {s.ordered} / {data?.maxPerOrder}
+                </TableCell>
+                <TableCell>
+                  {s.locked ? (
+                    <Badge tone="warning">Locked</Badge>
+                  ) : (
+                    <Badge tone="neutral">Can order more</Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant="soft"
+                    disabled={busy}
+                    onClick={() => void unlock(s.userId, s.shopName)}
+                  >
+                    Unlock
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </DataTable>
+        </LoadState>
+      </div>
+    </Modal>
   )
 }
 

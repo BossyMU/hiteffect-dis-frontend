@@ -1,4 +1,4 @@
-import { orderLimit, useCart } from '@/context/CartContext'
+import { limitLeft, orderLimit, useCart } from '@/context/CartContext'
 import { PATHS } from '@/routes/paths'
 import type { ShopProduct } from '@/types'
 import { CatalogCard } from './CatalogCard'
@@ -18,7 +18,8 @@ export function ProductCard({ product: p }: { product: ShopProduct }) {
   const cart = useCart()
   const limit = orderLimit(p)
   const inCart = Math.min(cart.qtyOf(p.id), limit)
-  const soldOut = limit === 0
+  const soldOut = p.available === 0
+  const limitReached = !soldOut && limitLeft(p) === 0
 
   return (
     <CatalogCard
@@ -36,6 +37,10 @@ export function ProductCard({ product: p }: { product: ShopProduct }) {
         soldOut ? (
           <button type="button" disabled className={cardButton.disabled}>
             Sold out
+          </button>
+        ) : limitReached ? (
+          <button type="button" disabled className={cardButton.disabled}>
+            Limit reached
           </button>
         ) : inCart > 0 ? (
           <QtyStepper

@@ -254,7 +254,7 @@ function PreviewDetail({
         <p className={soldOut ? 'text-sm text-muted-foreground' : 'text-sm font-medium text-success'}>
           {soldOut ? 'Sold out' : `In stock: ${boxes(p.available)}`}
           {p.maxPerOrder != null && !soldOut && (
-            <span className="font-normal text-muted-foreground"> · up to {p.maxPerOrder} per order</span>
+            <span className="font-normal text-muted-foreground"> · limit {p.maxPerOrder} per shop</span>
           )}
         </p>
 

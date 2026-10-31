@@ -41,9 +41,17 @@ function readCart(key: string): Record<string, CartLine> {
   }
 }
 
-/** Most boxes a shop can order of a product right now. */
+/**
+ * Boxes the shop may still order of a product: its limit per shop minus what it has already ordered
+ * (counted across all its orders until we unlock it). Infinity without a limit.
+ */
 // eslint-disable-next-line react-refresh/only-export-components
-export const orderLimit = (p: ShopProduct) => Math.max(0, Math.min(p.available, p.maxPerOrder ?? Infinity))
+export const limitLeft = (p: ShopProduct) =>
+  p.maxPerOrder == null ? Infinity : Math.max(0, p.maxPerOrder - (p.orderedQty ?? 0))
+
+/** Most boxes a shop can order of a product right now: stock, and what's left of its limit. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const orderLimit = (p: ShopProduct) => Math.max(0, Math.min(p.available, limitLeft(p)))
 
 /**
  * The shop's cart for in-stock products, kept per account in this browser so it survives a reload.

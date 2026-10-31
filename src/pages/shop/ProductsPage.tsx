@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { shopApi } from '@/api'
 import { FilterChip, LoadState, Pagination } from '@/components/ui'
-import { orderLimit, useCart } from '@/context/CartContext'
+import { useCart } from '@/context/CartContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
 import type { ShopProduct } from '@/types'
@@ -24,7 +24,7 @@ export default function ProductsPage() {
   const products = useMemo(() => (data ?? []).filter(isStockProduct), [data])
   const inStockOnly = params.show === 'in_stock'
   const filtered = useMemo(
-    () => filterCatalog(products, fields, params).filter((p) => !inStockOnly || orderLimit(p) > 0),
+    () => filterCatalog(products, fields, params).filter((p) => !inStockOnly || p.available > 0),
     [products, params, inStockOnly],
   )
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))

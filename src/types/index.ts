@@ -84,6 +84,8 @@ export interface Product {
   isListed: boolean
   /** Set when archived: hidden from shops, the product list and new rounds. */
   archivedAt: string | null
+  /** Shops that reached the limit and can't order it until unlocked. */
+  shopsAtLimit: number
   /** Orders or pre-order rounds use it, so it can be archived but not deleted. */
   hasHistory: boolean
   createdAt: string
@@ -92,11 +94,20 @@ export interface Product {
 
 export type NewProduct = Omit<
   Product,
-  'id' | 'stockOnHand' | 'stockReserved' | 'available' | 'createdAt' | 'archivedAt' | 'hasHistory'
+  | 'id'
+  | 'stockOnHand'
+  | 'stockReserved'
+  | 'available'
+  | 'createdAt'
+  | 'archivedAt'
+  | 'hasHistory'
+  | 'shopsAtLimit'
 >
 
 /** A product as a shop sees it: its own tier price and what is available now. */
 export interface ShopProduct {
+  /** Boxes this shop has ordered toward the product's limit since it was last unlocked. */
+  orderedQty: number
   /** The shop's tier in this product's game. */
   tierName: string | null
   id: string

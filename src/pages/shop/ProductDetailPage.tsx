@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { shopApi } from '@/api'
 import { LoadState } from '@/components/ui'
-import { orderLimit, useCart } from '@/context/CartContext'
+import { limitLeft, orderLimit, useCart } from '@/context/CartContext'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
@@ -37,7 +37,9 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
   const inCart = Math.min(cart.qtyOf(p.id), limit)
   const room = limit - inCart
   const [qty, setQty] = useState(1)
-  const soldOut = limit === 0
+  const soldOut = p.available === 0
+  // The shop ordered its limit for this product: locked until we unlock it.
+  const limitReached = !soldOut && limitLeft(p) === 0
 
   function add() {
     const n = Math.min(qty, room)
@@ -73,7 +75,11 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
       <p className={soldOut ? 'text-sm text-muted-foreground' : 'text-sm font-medium text-success'}>
         {soldOut ? 'Sold out' : `In stock: ${boxes(p.available)}`}
         {p.maxPerOrder != null && !soldOut && (
-          <span className="font-normal text-muted-foreground"> · up to {p.maxPerOrder} per order</span>
+          <span className="font-normal text-muted-foreground">
+            {' '}
+            · limit {p.maxPerOrder} per shop
+            {p.orderedQty > 0 && !limitReached && `, ${limitLeft(p)} left for you`}
+          </span>
         )}
       </p>
 
@@ -88,7 +94,7 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
         </p>
       )}
 
-      {!soldOut && (
+      {!soldOut && !limitReached && (
         <div className="space-y-3">
           <p className="text-sm font-medium">Quantity</p>
           <QtyStepper
@@ -106,9 +112,19 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
           <button type="button" disabled className={cardButton.disabled}>
             Sold out
           </button>
+        ) : limitReached ? (
+          <>
+            <button type="button" disabled className={cardButton.disabled}>
+              You have reached the limit
+            </button>
+            <p className="text-sm text-muted-foreground">
+              You have ordered {p.maxPerOrder}, the most each shop can have of this product. Please contact us
+              if you need more.
+            </p>
+          </>
         ) : room < 1 ? (
           <button type="button" disabled className={cardButton.disabled}>
-            All available boxes are in your cart
+            {limit < p.available ? 'Your limit is in your cart' : 'All available boxes are in your cart'}
           </button>
         ) : (
           <button type="button" onClick={add} className={`${cardButton.primary} py-3 text-base`}>
