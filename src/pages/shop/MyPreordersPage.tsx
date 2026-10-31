@@ -7,6 +7,7 @@ import { PATHS } from '@/routes/paths'
 import { useApiData } from '@/hooks/useApiData'
 import type { ShopRound } from '@/types'
 import { cn } from '@/utils/cn'
+import { balanceLeft } from '@/utils/balance'
 import { boxes, formatBaht } from '@/utils/format'
 import { useCatalogParams } from './catalog'
 import { cardButton } from './components/cardButton'
@@ -171,9 +172,9 @@ function TrackCard({
             value={
               !order || order.status === 'cancelled'
                 ? '—'
-                : order.amountDue === 0
+                : balanceLeft(order) === 0
                   ? 'Paid'
-                  : `${formatBaht(order.amountDue)}${order.status === 'pending_payment' ? ' due' : ' later'}`
+                  : `${formatBaht(balanceLeft(order))}${order.status === 'pending_payment' ? ' due' : ' later'}`
             }
           />
         </dl>

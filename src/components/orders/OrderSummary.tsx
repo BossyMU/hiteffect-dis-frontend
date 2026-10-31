@@ -6,6 +6,7 @@ import { cn } from '@/utils/cn'
 import { formatBaht, formatDateTime, formatDeadline } from '@/utils/format'
 import { deliveryLabel, shippingSummary } from '@/utils/shipping'
 import { ShippingBreakdown } from './ShippingBreakdown'
+import { balanceLeft } from '@/utils/balance'
 
 /** Tighter cells on phones, so the Amount column stays on screen. */
 const cell = 'px-3 sm:px-4'
@@ -69,6 +70,15 @@ export function OrderItemsTable({ order }: { order: Order }) {
               <TotalRow label="Deposit" value={order.depositAmount} muted />
             )}
             <TotalRow label="Paid so far" value={order.paidAmount} muted />
+            {order.type === 'preorder' && ['awaiting_deposit', 'awaiting_stock'].includes(order.status) && (
+              <TotalRow
+                label="Balance"
+                value={balanceLeft(order)}
+                note={
+                  shippingLater ? 'due when the stock arrives, plus shipping' : 'due when the stock arrives'
+                }
+              />
+            )}
             {order.status === 'pending_payment' && (
               <TotalRow
                 label="To pay"
