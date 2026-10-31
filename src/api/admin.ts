@@ -67,6 +67,8 @@ export const adminApi = {
   orders: (query: { status?: string; type?: 'preorder' | 'regular' | 'all' } = {}) =>
     request<Order[]>('/admin/orders', { query }),
   order: (id: string) => request<Order>(`/admin/orders/${id}`),
+  /** Sender name, address and phone for shipping labels. */
+  labelSender: () => request<{ name: string; address: string; phone: string }>('/admin/label-sender'),
   /** Mark a paid order shipped (EMS, with its tracking number) or picked up (no tracking number). */
   shipOrder: (id: string, trackingNo: string) => post<Order>(`/admin/orders/${id}/ship`, { trackingNo }),
   /** Thailand Post: the next tracking number from our assigned range (only when set up). */
