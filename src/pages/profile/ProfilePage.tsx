@@ -6,6 +6,7 @@ import {
   DetailList,
   Field,
   PageHeader,
+  PasswordInput,
   SectionTitle,
   TextArea,
   TextInput,
@@ -163,9 +164,8 @@ export default function ProfilePage() {
         <SectionTitle>Password</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Current password" htmlFor="currentPassword">
-            <TextInput
+            <PasswordInput
               id="currentPassword"
-              type="password"
               autoComplete="current-password"
               value={passwords.current}
               onChange={(e) => {
@@ -175,9 +175,8 @@ export default function ProfilePage() {
             />
           </Field>
           <Field label="New password" htmlFor="newPassword" error={passwordError}>
-            <TextInput
+            <PasswordInput
               id="newPassword"
-              type="password"
               autoComplete="new-password"
               value={passwords.next}
               onChange={(e) => {

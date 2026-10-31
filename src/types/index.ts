@@ -44,6 +44,8 @@ export interface AppNotification {
   subject: string
   body: string
   link: string
+  /** Key facts (deadline, boxes, amounts…). */
+  details: { label: string; value: string }[]
   createdAt: string
   readAt: string | null
 }

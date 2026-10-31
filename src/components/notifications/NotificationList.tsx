@@ -49,6 +49,15 @@ export function NotificationList({ limit = 8 }: { limit?: number }) {
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium group-hover:underline">{n.subject}</span>
                 {n.body && <span className="block text-xs text-muted-foreground">{n.body}</span>}
+                {n.details?.length > 0 && (
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {n.details.map((d) => (
+                      <span key={d.label} className="mr-3 inline-block">
+                        {d.label}: <span className="font-medium text-foreground">{d.value}</span>
+                      </span>
+                    ))}
+                  </span>
+                )}
               </span>
               <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                 {formatDateTime(n.createdAt)}

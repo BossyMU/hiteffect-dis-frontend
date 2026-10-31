@@ -1,9 +1,10 @@
-import type {
-  InputHTMLAttributes,
-  LabelHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import {
+  useState,
+  type InputHTMLAttributes,
+  type LabelHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react'
 import { cn } from '@/utils/cn'
 
@@ -24,6 +25,39 @@ const FIELD_BASE =
 
 export function TextInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(FIELD_BASE, className)} {...props} />
+}
+
+/** A password field with an eye button to show or hide what was typed. */
+export function PasswordInput({ className, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const [shown, setShown] = useState(false)
+  return (
+    <div className="relative">
+      <input type={shown ? 'text' : 'password'} className={cn(FIELD_BASE, 'pr-10', className)} {...props} />
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        aria-label={shown ? 'Hide password' : 'Show password'}
+        aria-pressed={shown}
+        title={shown ? 'Hide password' : 'Show password'}
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-[18px] w-[18px]"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+          <circle cx="12" cy="12" r="3" />
+          {shown && <path d="M3 3l18 18" />}
+        </svg>
+      </button>
+    </div>
+  )
 }
 
 export function TextArea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {

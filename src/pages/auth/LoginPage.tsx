@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { AuthLayout } from '@/components/layout'
-import { Button, Field, TextInput } from '@/components/ui'
+import { Button, Field, PasswordInput, TextInput } from '@/components/ui'
 import { useAuth } from '@/context/AuthContext'
 import { PATHS } from '@/routes/paths'
 
@@ -47,9 +47,8 @@ export default function LoginPage() {
           />
         </Field>
         <Field label="Password" htmlFor="password" error={error}>
-          <TextInput
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             value={password}
             onChange={(e) => {
