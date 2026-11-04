@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { cn } from '@/utils/cn'
 import { Button } from './Button'
 
@@ -11,8 +11,15 @@ interface ModalProps {
   className?: string
 }
 
-/** Centered dialog over a dimmed backdrop. Closes on backdrop click or Escape. */
+/**
+ * Centered dialog over a dimmed backdrop. Closes on Escape, or on a click on the backdrop itself:
+ * the press and the release must both be on it. (A press inside the dialog that ends outside, e.g.
+ * selecting text in a field and letting go past the edge, is a "click" on the backdrop too, and
+ * used to close the dialog and lose what was typed.)
+ */
 export function Modal({ title, onClose, children, footer, className }: ModalProps) {
+  const pressedOnBackdrop = useRef(false)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     document.addEventListener('keydown', onKey)
@@ -22,7 +29,17 @@ export function Modal({ title, onClose, children, footer, className }: ModalProp
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(18,19,28,0.62)] p-4"
-      onClick={onClose}
+      onPointerDown={(e) => {
+        pressedOnBackdrop.current = e.target === e.currentTarget
+      }}
+      onPointerUp={(e) => {
+        // Released inside the dialog: not a backdrop click, wherever the press started.
+        if (e.target !== e.currentTarget) pressedOnBackdrop.current = false
+      }}
+      onClick={(e) => {
+        if (pressedOnBackdrop.current && e.target === e.currentTarget) onClose()
+        pressedOnBackdrop.current = false
+      }}
     >
       <div
         role="dialog"
