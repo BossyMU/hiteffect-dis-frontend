@@ -54,6 +54,7 @@ function PreorderDetail({ round: r, onChanged }: { round: ShopRound; onChanged: 
           alt={r.productName}
           setCode={r.productSetCode}
           game={r.productGame}
+          enlargeable
         >
           <ImageBadge tone={state.badgeTone}>{state.badge}</ImageBadge>
         </ProductImage>

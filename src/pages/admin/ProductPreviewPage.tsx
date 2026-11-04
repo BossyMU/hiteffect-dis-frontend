@@ -233,7 +233,7 @@ function PreviewDetail({
         backTo={PATHS.adminPreview}
         backLabel="Product preview"
         image={
-          <ProductImage src={p.imageUrl} alt={p.name} setCode={p.setCode} game={p.game}>
+          <ProductImage src={p.imageUrl} alt={p.name} setCode={p.setCode} game={p.game} enlargeable>
             {soldOut && <ImageBadge tone="muted">Sold out</ImageBadge>}
           </ProductImage>
         }

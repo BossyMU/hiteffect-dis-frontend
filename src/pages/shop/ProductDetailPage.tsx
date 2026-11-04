@@ -54,7 +54,7 @@ function ProductDetail({ product: p }: { product: ShopProduct }) {
       backTo={PATHS.products}
       backLabel="Products"
       image={
-        <ProductImage src={p.imageUrl} alt={p.name} setCode={p.setCode} game={p.game}>
+        <ProductImage src={p.imageUrl} alt={p.name} setCode={p.setCode} game={p.game} enlargeable>
           {soldOut && <ImageBadge tone="muted">Sold out</ImageBadge>}
         </ProductImage>
       }
