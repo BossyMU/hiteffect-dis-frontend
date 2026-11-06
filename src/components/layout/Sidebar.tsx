@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation } from 'react-router'
 import { useAuth, useUser } from '@/context/AuthContext'
-import { PATHS } from '@/routes/paths'
+import { homeFor, PATHS } from '@/routes/paths'
+import { isStaff } from '@/types'
 import { cn } from '@/utils/cn'
 import { BrandMark } from './BrandMark'
 import { NAV_ITEMS, isNavActive } from './navItems'
@@ -11,7 +12,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { logout } = useAuth()
   const { pathname, state } = useLocation()
   const from = (state as { from?: string } | null)?.from
-  const home = user.role === 'admin' ? PATHS.admin : PATHS.home
+  const home = homeFor(user)
+  const staff = isStaff(user.role)
 
   return (
     <aside className="flex h-full w-[232px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
@@ -22,7 +24,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       >
         <BrandMark />
         <p className="font-mono text-[10.5px] tracking-[2px] text-muted-foreground uppercase">
-          {user.role === 'admin' ? 'Distributor admin' : 'Distributor portal'}
+          {staff ? 'Distributor admin' : 'Distributor portal'}
         </p>
       </Link>
 
@@ -54,11 +56,16 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{user.shopName || user.email}</p>
           <p className="truncate font-mono text-xs text-muted-foreground">
-            {user.role === 'admin' ? 'Admin' : `${user.tierName ?? 'No'} tier`} · {user.email}
+            {user.role === 'admin'
+              ? 'Admin'
+              : user.role === 'clerk'
+                ? 'Store clerk'
+                : `${user.tierName ?? 'No'} tier`}{' '}
+            · {user.email}
           </p>
         </div>
         <div className="flex gap-3 text-xs">
-          {user.role === 'admin' && (
+          {staff && (
             <Link to={PATHS.profile} onClick={onNavigate} className="text-info hover:underline">
               Profile
             </Link>

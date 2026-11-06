@@ -15,7 +15,7 @@ import { useAuth, useUser } from '@/context/AuthContext'
 import { useToast } from '@/context/ToastContext'
 import { formatDate } from '@/utils/format'
 
-/** Contact, shipping and tax details (for tax invoices), and password. */
+/** Contact, shipping and tax details (for tax invoices), and password. Clerks: name, phone and password. */
 export default function ProfilePage() {
   const user = useUser()
   const { setUser } = useAuth()
@@ -73,92 +73,126 @@ export default function ProfilePage() {
         </Card>
       )}
 
-      <Card className="space-y-4">
-        <SectionTitle>Contact and shipping</SectionTitle>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label={user.role === 'shop' ? 'Shop name' : 'Display name'}
-            htmlFor="shopName"
-            error={errors.shopName}
-          >
-            <TextInput
-              id="shopName"
-              value={form.shopName}
-              onChange={(e) => set('shopName')(e.target.value)}
-            />
-          </Field>
-          <Field label="Contact name" htmlFor="contactName">
-            <TextInput
-              id="contactName"
-              value={form.contactName}
-              onChange={(e) => set('contactName')(e.target.value)}
-            />
-          </Field>
-          <Field label="Phone" htmlFor="phone">
-            <TextInput id="phone" value={form.phone} onChange={(e) => set('phone')(e.target.value)} />
-          </Field>
-        </div>
-        <Field
-          label={user.role === 'admin' ? 'Warehouse address' : 'Shipping address'}
-          htmlFor="address"
-          hint={
-            user.role === 'admin'
-              ? 'Shown to shops that pick up their orders, and printed as the sender on shipping labels.'
-              : undefined
-          }
-        >
-          <TextArea id="address" value={form.address} onChange={(e) => set('address')(e.target.value)} />
-        </Field>
-      </Card>
+      {user.role === 'clerk' && (
+        <Card className="space-y-4">
+          <SectionTitle>Your details</SectionTitle>
+          <p className="text-sm text-muted-foreground">
+            Your name is shown on what you change: stock edits, shipped and cancelled orders, and payments you
+            check.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Name" htmlFor="clerkName" error={errors.shopName}>
+              <TextInput
+                id="clerkName"
+                value={form.shopName}
+                onChange={(e) => {
+                  set('shopName')(e.target.value)
+                  set('contactName')(e.target.value)
+                }}
+              />
+            </Field>
+            <Field label="Phone" htmlFor="phone">
+              <TextInput id="phone" value={form.phone} onChange={(e) => set('phone')(e.target.value)} />
+            </Field>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => void save()} disabled={saving}>
+              {saving ? 'Saving…' : 'Save profile'}
+            </Button>
+          </div>
+        </Card>
+      )}
 
-      <Card className="space-y-4">
-        <SectionTitle>Tax invoice details</SectionTitle>
-        <p className="text-sm text-muted-foreground">
-          Used on your full tax invoices. Leave empty if you don't need them.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Registered business name" htmlFor="legalName">
-            <TextInput
-              id="legalName"
-              value={form.legalName}
-              onChange={(e) => set('legalName')(e.target.value)}
-            />
-          </Field>
-          <Field label="Tax ID (13 digits)" htmlFor="taxId" error={errors.taxId}>
-            <TextInput
-              id="taxId"
-              inputMode="numeric"
-              value={form.taxId}
-              onChange={(e) => set('taxId')(e.target.value.trim())}
-            />
-          </Field>
-          <Field
-            label="Branch code"
-            htmlFor="branchCode"
-            error={errors.branchCode}
-            hint="00000 = head office"
-          >
-            <TextInput
-              id="branchCode"
-              inputMode="numeric"
-              value={form.branchCode}
-              onChange={(e) => set('branchCode')(e.target.value.trim())}
-            />
-          </Field>
-        </div>
-        <Field label="Tax address" htmlFor="taxAddress">
-          <TextArea
-            id="taxAddress"
-            value={form.taxAddress}
-            onChange={(e) => set('taxAddress')(e.target.value)}
-          />
-        </Field>
-        <div className="flex justify-end">
-          <Button onClick={() => void save()} disabled={saving}>
-            {saving ? 'Saving…' : 'Save profile'}
-          </Button>
-        </div>
-      </Card>
+      {user.role !== 'clerk' && (
+        <>
+          <Card className="space-y-4">
+            <SectionTitle>Contact and shipping</SectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label={user.role === 'shop' ? 'Shop name' : 'Display name'}
+                htmlFor="shopName"
+                error={errors.shopName}
+              >
+                <TextInput
+                  id="shopName"
+                  value={form.shopName}
+                  onChange={(e) => set('shopName')(e.target.value)}
+                />
+              </Field>
+              <Field label="Contact name" htmlFor="contactName">
+                <TextInput
+                  id="contactName"
+                  value={form.contactName}
+                  onChange={(e) => set('contactName')(e.target.value)}
+                />
+              </Field>
+              <Field label="Phone" htmlFor="phone">
+                <TextInput id="phone" value={form.phone} onChange={(e) => set('phone')(e.target.value)} />
+              </Field>
+            </div>
+            <Field
+              label={user.role === 'admin' ? 'Warehouse address' : 'Shipping address'}
+              htmlFor="address"
+              hint={
+                user.role === 'admin'
+                  ? 'Shown to shops that pick up their orders, and printed as the sender on shipping labels.'
+                  : undefined
+              }
+            >
+              <TextArea id="address" value={form.address} onChange={(e) => set('address')(e.target.value)} />
+            </Field>
+          </Card>
+
+          <Card className="space-y-4">
+            <SectionTitle>Tax invoice details</SectionTitle>
+            <p className="text-sm text-muted-foreground">
+              Used on your full tax invoices. Leave empty if you don't need them.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Registered business name" htmlFor="legalName">
+                <TextInput
+                  id="legalName"
+                  value={form.legalName}
+                  onChange={(e) => set('legalName')(e.target.value)}
+                />
+              </Field>
+              <Field label="Tax ID (13 digits)" htmlFor="taxId" error={errors.taxId}>
+                <TextInput
+                  id="taxId"
+                  inputMode="numeric"
+                  value={form.taxId}
+                  onChange={(e) => set('taxId')(e.target.value.trim())}
+                />
+              </Field>
+              <Field
+                label="Branch code"
+                htmlFor="branchCode"
+                error={errors.branchCode}
+                hint="00000 = head office"
+              >
+                <TextInput
+                  id="branchCode"
+                  inputMode="numeric"
+                  value={form.branchCode}
+                  onChange={(e) => set('branchCode')(e.target.value.trim())}
+                />
+              </Field>
+            </div>
+            <Field label="Tax address" htmlFor="taxAddress">
+              <TextArea
+                id="taxAddress"
+                value={form.taxAddress}
+                onChange={(e) => set('taxAddress')(e.target.value)}
+              />
+            </Field>
+            <div className="flex justify-end">
+              <Button onClick={() => void save()} disabled={saving}>
+                {saving ? 'Saving…' : 'Save profile'}
+              </Button>
+            </div>
+          </Card>
+        </>
+      )}
 
       <Card className="space-y-4">
         <SectionTitle>Password</SectionTitle>

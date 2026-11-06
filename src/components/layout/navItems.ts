@@ -22,6 +22,16 @@ export function isNavActive(item: NavItem, pathname: string, from?: string) {
   return item.end ? path === item.to : matches(item.to) || (item.also ?? []).some(matches)
 }
 
+const STAFF_ITEMS: NavItem[] = [
+  { to: PATHS.admin, label: 'Dashboard', icon: '⌂', end: true },
+  { to: PATHS.adminRounds, label: 'Rounds', icon: '◈' },
+  { to: PATHS.adminPayments, label: 'Payments', icon: '✓' },
+  { to: PATHS.adminOrders, label: 'Orders', icon: '◻' },
+  { to: PATHS.adminProducts, label: 'Products', icon: '▦' },
+  { to: PATHS.adminPreview, label: 'Product preview', icon: '◇' },
+  { to: PATHS.adminShops, label: 'Shops', icon: '◎' },
+]
+
 /** Primary navigation per role, in display order (sidebar and mobile bottom bar). */
 export const NAV_ITEMS: Record<Role, NavItem[]> = {
   shop: [
@@ -32,13 +42,7 @@ export const NAV_ITEMS: Record<Role, NavItem[]> = {
     { to: PATHS.orders, label: 'My orders', icon: '◻' },
     { to: PATHS.profile, label: 'Profile', icon: '◎' },
   ],
-  admin: [
-    { to: PATHS.admin, label: 'Dashboard', icon: '⌂', end: true },
-    { to: PATHS.adminRounds, label: 'Rounds', icon: '◈' },
-    { to: PATHS.adminPayments, label: 'Payments', icon: '✓' },
-    { to: PATHS.adminOrders, label: 'Orders', icon: '◻' },
-    { to: PATHS.adminProducts, label: 'Products', icon: '▦' },
-    { to: PATHS.adminPreview, label: 'Product preview', icon: '◇' },
-    { to: PATHS.adminShops, label: 'Shops', icon: '◎' },
-  ],
+  admin: [...STAFF_ITEMS, { to: PATHS.adminStaff, label: 'Staff', icon: '☺' }],
+  // Store clerks: the same pages, without managing staff accounts.
+  clerk: STAFF_ITEMS,
 }

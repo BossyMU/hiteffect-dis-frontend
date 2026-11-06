@@ -5,7 +5,12 @@
 
 // ─── Accounts ───────────────────────────────────────────────────────────────
 
-export type Role = 'admin' | 'shop'
+/** Shops buy; staff (admins and store clerks) run the distributor side. */
+export type Role = 'admin' | 'clerk' | 'shop'
+export type StaffRole = 'admin' | 'clerk'
+
+/** Admins and clerks see the admin pages; only admins manage staff accounts. */
+export const isStaff = (role: Role): role is StaffRole => role === 'admin' || role === 'clerk'
 export type UserStatus = 'pending' | 'approved' | 'suspended'
 
 export interface User {
@@ -127,6 +132,20 @@ export interface ShopProduct {
   activeRound: { id: string; status: RoundStatus; requestDeadline: string | null } | null
 }
 
+/** An admin or store clerk account, on the Staff page. */
+export interface StaffMember {
+  id: string
+  email: string
+  role: StaffRole
+  /** 'suspended' = disabled: can't log in. */
+  status: UserStatus
+  name: string
+  phone: string
+  lastLoginAt: string | null
+  createdAt: string
+}
+
+/** A manual stock edit (the Stock window's +/− with a reason). */
 export interface StockMovement {
   id: number
   type: 'receive' | 'reserve' | 'release' | 'ship' | 'adjust'
@@ -135,6 +154,7 @@ export interface StockMovement {
   refId: string | null
   note: string
   createdAt: string
+  /** Who made it (their name, else their e-mail); null for edits made before this was kept. */
   createdBy: string | null
 }
 
@@ -341,6 +361,8 @@ export interface OrderPayment {
   status: PaymentStatus
   submittedAt: string
   reviewedAt: string | null
+  /** The staff member who confirmed or rejected it (admin side only). */
+  reviewedBy?: string | null
   rejectReason: string
   /** Xendit's payment page, while an online payment is open. */
   checkoutUrl: string | null
@@ -380,8 +402,13 @@ export interface Order {
   shipAddress: string
   note: string
   cancelReason: string
+  cancelledAt: string | null
+  /** Who cancelled it: a staff member or the shop; null for the deadline job (admin side only). */
+  cancelledBy?: string | null
   trackingNo: string
   shippedAt: string | null
+  /** The staff member who marked it shipped or picked up (admin side only). */
+  shippedBy?: string | null
   shipDate: string | null
   createdAt: string
   items: OrderItem[]

@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { StatusPanel } from '@/components/ui'
 import { useAuth } from '@/context/AuthContext'
-import { PATHS } from '@/routes/paths'
+import { homeFor, PATHS } from '@/routes/paths'
 import type { Role } from '@/types'
 
 /** Renders the nested routes only for a logged-in user with one of `roles`. */
@@ -11,8 +11,7 @@ export function RequireAuth({ roles }: { roles: Role[] }) {
 
   if (status === 'loading') return <StatusPanel title="Loading…" />
   if (!user) return <Navigate to={PATHS.login} replace state={{ from: location.pathname }} />
-  if (!roles.includes(user.role))
-    return <Navigate to={user.role === 'admin' ? PATHS.admin : PATHS.home} replace />
+  if (!roles.includes(user.role)) return <Navigate to={homeFor(user)} replace />
   return <Outlet />
 }
 
@@ -20,6 +19,6 @@ export function RequireAuth({ roles }: { roles: Role[] }) {
 export function GuestOnly() {
   const { user, status } = useAuth()
   if (status === 'loading') return <StatusPanel title="Loading…" />
-  if (user) return <Navigate to={user.role === 'admin' ? PATHS.admin : PATHS.home} replace />
+  if (user) return <Navigate to={homeFor(user)} replace />
   return <Outlet />
 }

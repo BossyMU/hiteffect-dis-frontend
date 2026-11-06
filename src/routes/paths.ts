@@ -1,3 +1,5 @@
+import { isStaff, type User } from '@/types'
+
 export const PATHS = {
   login: '/login',
   register: '/register',
@@ -29,4 +31,9 @@ export const PATHS = {
   adminPreview: '/admin/preview',
   adminPreviewProduct: (id: string) => `/admin/preview/${id}`,
   adminShops: '/admin/shops',
+  /** Admins only: store clerk accounts. */
+  adminStaff: '/admin/staff',
 } as const
+
+/** Where an account starts: the admin dashboard for staff (admins, clerks), the shop home for shops. */
+export const homeFor = (user: Pick<User, 'role'>) => (isStaff(user.role) ? PATHS.admin : PATHS.home)

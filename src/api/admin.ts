@@ -11,6 +11,7 @@ import type {
   PaymentStatus,
   Product,
   RoundDetail,
+  StaffMember,
   StockMovement,
   Tier,
   TrackingStatus,
@@ -42,6 +43,14 @@ export const adminApi = {
     },
   ) => patch<User>(`/admin/shops/${id}`, body),
 
+  /** Admins only: staff accounts (admins and store clerks). */
+  staff: () => request<StaffMember[]>('/admin/staff'),
+  createClerk: (body: { name: string; email: string; password: string; phone?: string }) =>
+    post<StaffMember>('/admin/staff', body),
+  /** Rename, disable ('suspended') or enable ('approved'), or set a new password. */
+  updateClerk: (id: string, body: { name?: string; status?: 'approved' | 'suspended'; password?: string }) =>
+    patch<StaffMember>(`/admin/staff/${id}`, body),
+
   tiers: () => request<Tier[]>('/admin/tiers'),
   createTier: (body: Pick<Tier, 'name' | 'weight' | 'maxPreorderQty' | 'sortOrder'>) =>
     post<Tier>('/admin/tiers', body),
@@ -65,6 +74,7 @@ export const adminApi = {
   restoreProduct: (id: string) => post<Product>(`/admin/products/${id}/restore`),
   adjustStock: (id: string, qty: number, note: string) =>
     post<Product>(`/admin/products/${id}/stock`, { qty, note }),
+  /** The product's manual stock edits, newest first, with who made each. */
   movements: (id: string) => request<StockMovement[]>(`/admin/products/${id}/movements`),
 
   rounds: () => request<AdminRound[]>('/admin/rounds'),

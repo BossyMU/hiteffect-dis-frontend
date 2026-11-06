@@ -22,6 +22,7 @@ import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
 import type { NewProduct, Product, Tier } from '@/types'
+import { csvToday, downloadCsv } from '@/utils/csv'
 import { formatBaht, formatDateTime } from '@/utils/format'
 import { formatWeight } from '@/utils/shipping'
 import { GameFilterNote, GameFilterSelects } from './components/GameFilter'
@@ -63,7 +64,19 @@ export default function ProductsPage() {
       <PageHeader
         title="Products"
         subtitle="Counted in boxes. Available = on hand − held for orders."
-        actions={<Button onClick={() => setEditing('new')}>+ New product</Button>}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              disabled={products.length === 0}
+              onClick={() => exportProducts(products, tiers ?? [], archived)}
+              title="The products shown with the filters below, with stock and prices"
+            >
+              Export CSV ({products.length})
+            </Button>
+            <Button onClick={() => setEditing('new')}>+ New product</Button>
+          </>
+        }
       />
       <FilterBar>
         <FilterChip active={!archived} onClick={() => setArchived(false)}>
@@ -667,21 +680,77 @@ function StockModal({
             />
           </Field>
         </div>
-        {movements && movements.length > 0 && (
-          <DataTable headers={['When', 'Type', 'Boxes', 'Note']}>
-            {movements.slice(0, 15).map((m) => (
-              <TableRow key={m.id}>
-                <TableCell className="font-mono text-xs text-muted-foreground">
-                  {formatDateTime(m.createdAt)}
-                </TableCell>
-                <TableCell className="text-xs">{m.type}</TableCell>
-                <TableCell className="font-mono">{m.qty}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{m.note || m.refType || '—'}</TableCell>
-              </TableRow>
-            ))}
-          </DataTable>
-        )}
+        {/* Every manual edit, newest first. Boxes held, released and shipped for orders are on the orders. */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">
+            Manual stock edits{movements && movements.length > 0 ? ` (${movements.length})` : ''}
+          </h3>
+          {movements && movements.length === 0 && (
+            <p className="text-sm text-muted-foreground">No manual edits yet.</p>
+          )}
+          {movements && movements.length > 0 && (
+            <div className="max-h-80 overflow-y-auto rounded-lg">
+              <DataTable headers={['When', 'Boxes', 'Why', 'By']}>
+                {movements.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell className="font-mono text-xs whitespace-nowrap text-muted-foreground">
+                      {formatDateTime(m.createdAt)}
+                    </TableCell>
+                    <TableCell
+                      className={`font-mono font-semibold ${m.qty > 0 ? 'text-success' : 'text-danger'}`}
+                    >
+                      {m.qty > 0 ? `+${m.qty}` : m.qty}
+                    </TableCell>
+                    <TableCell className="text-xs">{m.note || '—'}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{m.createdBy ?? '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </DataTable>
+            </div>
+          )}
+        </div>
       </div>
     </Modal>
   )
+}
+
+/** The products shown, with stock, limits and the price each tier pays. */
+function exportProducts(products: Product[], tiers: Tier[], archived: boolean) {
+  const sortedTiers = [...tiers].sort((a, b) => a.sortOrder - b.sortOrder)
+  const headers = [
+    'SKU',
+    'Name',
+    'Game',
+    'Category',
+    'Set',
+    'Release date',
+    'Shop status',
+    'On hand',
+    'Held for orders',
+    'Available',
+    'Limit per shop',
+    'Boxes per case',
+    'Weight per box (g)',
+    'Base price',
+    ...sortedTiers.map((t) => `${t.name} price`),
+  ]
+  const rows = products.map((p) => [
+    p.sku,
+    p.name,
+    p.game,
+    p.category,
+    p.setCode,
+    p.releaseDate ?? '',
+    p.archivedAt ? 'Archived' : p.isListed ? 'Listed' : 'Hidden',
+    p.stockOnHand,
+    p.stockReserved,
+    p.available,
+    p.maxPerOrder,
+    p.boxesPerCase,
+    p.weightGrams,
+    p.basePrice,
+    // A tier without its own price pays the base price.
+    ...sortedTiers.map((t) => p.tierPrices.find((tp) => tp.tierId === t.id)?.price ?? p.basePrice),
+  ])
+  downloadCsv(`deckdrive-products${archived ? '-archived' : ''}-${csvToday()}.csv`, headers, rows)
 }

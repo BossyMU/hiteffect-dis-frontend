@@ -20,14 +20,15 @@ import {
   TextArea,
   TextInput,
 } from '@/components/ui'
-import { ORDER_STATUS, ORDER_STATUSES } from '@/constants/status'
+import { ORDER_STATUS, ORDER_STATUSES, PAYMENT_KIND_LABEL } from '@/constants/status'
 import { useToast } from '@/context/ToastContext'
 import { useApiData } from '@/hooks/useApiData'
 import { usePagination } from '@/hooks/usePagination'
 import { usePaymentOptions } from '@/hooks/usePaymentOptions'
 import { PATHS } from '@/routes/paths'
 import type { Order, OrderStatus } from '@/types'
-import { boxes, formatBaht, formatDate, formatDeadline } from '@/utils/format'
+import { boxes, formatBaht, formatDate, formatDateTime, formatDeadline } from '@/utils/format'
+import { csvDateTime, csvToday, downloadCsv } from '@/utils/csv'
 import { isValidTrackingNo, normalizeTrackingNo } from '@/utils/trackingNo'
 import { GameFilterNote, GameFilterSelects } from './components/GameFilter'
 import { useGameFilter } from './components/useGameFilter'
@@ -58,7 +59,20 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Orders" subtitle="Ship or hand over paid orders; cancel when needed" />
+      <PageHeader
+        title="Orders"
+        subtitle="Ship or hand over paid orders; cancel when needed"
+        actions={
+          <Button
+            variant="outline"
+            disabled={filtered.length === 0}
+            onClick={() => exportOrders(filtered)}
+            title="The orders shown with the filters below, one row per product line"
+          >
+            Export CSV ({filtered.length})
+          </Button>
+        }
+      />
       <FilterBar>
         <FilterChip
           active={filter === 'all'}
@@ -258,6 +272,7 @@ function OrderModal({
           <p className="text-sm text-muted-foreground">Ship to: {order.shipAddress || '—'}</p>
         )}
         {order.note && <p className="text-sm">Note: {order.note}</p>}
+        <OrderActivity order={order} />
         {!pickup && order.status === 'shipped' && order.trackingNo && options?.thaipost.tracking && (
           <TrackingTimeline load={() => adminApi.tracking(order.id)} />
         )}
@@ -327,4 +342,106 @@ function OrderModal({
       </div>
     </Modal>
   )
+}
+
+/**
+ * Who did what on the order, for the admin side: payments checked, shipped or picked up, cancelled.
+ * Actions from before names were kept, and the deadline job, show no name.
+ */
+function OrderActivity({ order }: { order: Order }) {
+  const pickup = order.deliveryMethod === 'pickup'
+  const lines: [string, string][] = []
+  for (const p of order.payments) {
+    if (p.status === 'pending' || !p.reviewedAt) continue
+    const by = p.reviewedBy ?? (p.method === 'Xendit' ? 'Xendit' : null)
+    lines.push([
+      `${PAYMENT_KIND_LABEL[p.kind]} ${formatBaht(p.amount)} ${p.status}`,
+      `${formatDateTime(p.reviewedAt)}${by ? ` by ${by}` : ''}`,
+    ])
+  }
+  if (order.shippedAt) {
+    lines.push([
+      pickup ? 'Picked up' : 'Shipped',
+      `${formatDateTime(order.shippedAt)}${order.shippedBy ? ` by ${order.shippedBy}` : ''}`,
+    ])
+  }
+  if (order.status === 'cancelled' && order.cancelledAt) {
+    lines.push([
+      'Cancelled',
+      `${formatDateTime(order.cancelledAt)} by ${order.cancelledBy ?? 'the system (payment deadline)'}`,
+    ])
+  }
+  if (lines.length === 0) return null
+  return (
+    <div className="space-y-1.5 border-t border-border pt-4">
+      <h3 className="text-sm font-semibold">Activity</h3>
+      <ul className="space-y-1 text-sm">
+        {lines.map(([what, when]) => (
+          <li key={what + when} className="flex flex-wrap justify-between gap-x-4">
+            <span>{what}</span>
+            <span className="text-muted-foreground">{when}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** The orders shown, one row per product line (order details repeat on each of its lines). */
+function exportOrders(orders: Order[]) {
+  const headers = [
+    'Order no.',
+    'Ordered',
+    'Shop',
+    'Type',
+    'Pre-order round',
+    'Status',
+    'Delivery',
+    'SKU',
+    'Product',
+    'Qty (boxes)',
+    'Unit price',
+    'Line total',
+    'Order goods',
+    'Order shipping',
+    'Order total',
+    'Order paid',
+    'Refund due',
+    'Tracking no.',
+    'Shipped / picked up',
+    'Shipped by',
+    'Cancelled',
+    'Cancelled by',
+    'Cancel reason',
+  ]
+  const rows = orders.flatMap((o) => {
+    const pickup = o.deliveryMethod === 'pickup'
+    const status = pickup && o.status === 'shipped' ? 'Picked up' : ORDER_STATUS[o.status].label
+    return o.items.map((i) => [
+      o.orderNo,
+      csvDateTime(o.createdAt),
+      o.shopName,
+      o.type === 'preorder' ? 'Pre-order' : 'Regular',
+      o.roundTitle ?? '',
+      status,
+      pickup ? 'Pick-up' : 'EMS',
+      i.sku,
+      i.productName,
+      i.qty,
+      i.unitPrice,
+      i.qty * i.unitPrice,
+      o.subtotal,
+      o.shippingFee,
+      o.total,
+      o.paidAmount,
+      o.refundDue || '',
+      o.trackingNo,
+      csvDateTime(o.shippedAt),
+      o.shippedBy ?? '',
+      o.status === 'cancelled' ? csvDateTime(o.cancelledAt) : '',
+      o.status === 'cancelled' ? (o.cancelledBy ?? 'System (payment deadline)') : '',
+      o.cancelReason,
+    ])
+  })
+  downloadCsv(`deckdrive-orders-${csvToday()}.csv`, headers, rows)
 }

@@ -12,6 +12,7 @@ import ProductsPage from '@/pages/admin/ProductsPage'
 import RoundDetailPage from '@/pages/admin/RoundDetailPage'
 import RoundsPage from '@/pages/admin/RoundsPage'
 import ShopsPage from '@/pages/admin/ShopsPage'
+import StaffPage from '@/pages/admin/StaffPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import ProfilePage from '@/pages/profile/ProfilePage'
@@ -37,9 +38,9 @@ export default function App() {
               <Route path={PATHS.register} element={<RegisterPage />} />
             </Route>
 
-            <Route element={<RequireAuth roles={['shop', 'admin']} />}>
-              {/* Printable labels: admin only, without the app's menus. */}
-              <Route element={<RequireAuth roles={['admin']} />}>
+            <Route element={<RequireAuth roles={['shop', 'admin', 'clerk']} />}>
+              {/* Printable labels: staff only, without the app's menus. */}
+              <Route element={<RequireAuth roles={['admin', 'clerk']} />}>
                 <Route path="/admin/orders/:id/label" element={<OrderLabelPage />} />
               </Route>
               <Route element={<AppLayout />}>
@@ -60,7 +61,8 @@ export default function App() {
                   </Route>
                 </Route>
 
-                <Route element={<RequireAuth roles={['admin']} />}>
+                {/* Staff: admins and store clerks. Clerks can do everything but manage staff. */}
+                <Route element={<RequireAuth roles={['admin', 'clerk']} />}>
                   <Route path={PATHS.admin} element={<AdminDashboardPage />} />
                   <Route path={PATHS.adminRounds} element={<RoundsPage />} />
                   <Route path="/admin/rounds/:id" element={<RoundDetailPage />} />
@@ -70,6 +72,9 @@ export default function App() {
                   <Route path={PATHS.adminPreview} element={<ProductPreviewPage />} />
                   <Route path="/admin/preview/:id" element={<ProductPreviewPage />} />
                   <Route path={PATHS.adminShops} element={<ShopsPage />} />
+                </Route>
+                <Route element={<RequireAuth roles={['admin']} />}>
+                  <Route path={PATHS.adminStaff} element={<StaffPage />} />
                 </Route>
               </Route>
             </Route>

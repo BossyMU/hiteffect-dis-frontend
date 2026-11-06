@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router'
 import { adminApi } from '@/api'
 import { BrandMark } from '@/components/layout'
 import { LoadState } from '@/components/ui'
+import { useUser } from '@/context/AuthContext'
 import { useApiData } from '@/hooks/useApiData'
 import { PATHS } from '@/routes/paths'
 import type { Order, User } from '@/types'
@@ -56,6 +57,7 @@ interface Sender {
 const MAX_CONTENT_LINES = 3
 
 function Labels({ order, shop, sender }: { order: Order; shop: User | null; sender: Sender }) {
+  const isAdmin = useUser().role === 'admin'
   const parcels = order.shippingDetail?.parcels ?? [{ boxes: 0, grams: 0, postage: 0 }]
   const ems = order.deliveryMethod === 'ems'
   const notice = 'rounded-md border border-warning/40 bg-warning/10 px-3 py-2'
@@ -73,12 +75,17 @@ function Labels({ order, shop, sender }: { order: Order; shop: User | null; send
         )}
         {(!sender.address || !sender.phone) && (
           <p className={notice}>
-            Your profile has no {!sender.address ? 'warehouse address' : 'phone number'}
+            {isAdmin ? 'Your' : "The admin's"} profile has no{' '}
+            {!sender.address ? 'warehouse address' : 'phone number'}
             {!sender.address && !sender.phone ? ' or phone number' : ''}, so it is missing from the sender on
             the label.{' '}
-            <Link to={PATHS.profile} className="font-semibold underline">
-              Add it in Profile
-            </Link>
+            {isAdmin ? (
+              <Link to={PATHS.profile} className="font-semibold underline">
+                Add it in Profile
+              </Link>
+            ) : (
+              'Ask an admin to add it in their Profile.'
+            )}
           </p>
         )}
         {!order.trackingNo && (
