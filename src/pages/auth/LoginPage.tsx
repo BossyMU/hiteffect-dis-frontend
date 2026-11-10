@@ -9,11 +9,13 @@ export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const justRegistered = (location.state as { registered?: boolean } | null)?.registered
+  const state = location.state as { registered?: boolean; passwordReset?: boolean; email?: string } | null
+  const justRegistered = state?.registered
+  const justReset = state?.passwordReset
+  const [email, setEmail] = useState(state?.email ?? '')
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -31,6 +33,11 @@ export default function LoginPage() {
       {justRegistered && (
         <p className="mb-4 rounded-md border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
           Thanks for signing up. We will approve your account and set your tier, then you can log in.
+        </p>
+      )}
+      {justReset && (
+        <p className="mb-4 rounded-md border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
+          Your password is changed. Log in with your new password.
         </p>
       )}
       <form onSubmit={submit} className="space-y-4" noValidate>
@@ -57,6 +64,15 @@ export default function LoginPage() {
             }}
           />
         </Field>
+        <p className="-mt-2 text-right text-sm">
+          <Link
+            to={PATHS.forgotPassword}
+            state={{ email: email.trim() }}
+            className="font-semibold text-info hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </p>
         <Button type="submit" className="w-full" disabled={busy}>
           {busy ? 'Logging in…' : 'Log in'}
         </Button>

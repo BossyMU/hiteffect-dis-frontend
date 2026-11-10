@@ -21,6 +21,14 @@ export const authApi = {
   login: (email: string, password: string) =>
     request<{ token: string; user: User }>('/auth/login', { method: 'POST', body: { email, password } }),
   register: (input: RegisterInput) => request<User>('/auth/register', { method: 'POST', body: input }),
+  /** E-mails a one-time link to set a new password. The same answer whether or not the e-mail has an account. */
+  forgotPassword: (email: string) =>
+    request<{ ok: true; minutes: number }>('/auth/forgot-password', { method: 'POST', body: { email } }),
+  /** Is the e-mailed link still good, and for which account. */
+  checkPasswordReset: (token: string) =>
+    request<{ email: string }>('/auth/reset-password/check', { method: 'POST', body: { token } }),
+  resetPassword: (token: string, password: string) =>
+    request<{ email: string }>('/auth/reset-password', { method: 'POST', body: { token, password } }),
   me: () => request<User>('/me'),
   updateProfile: (input: ProfileInput) => request<User>('/me', { method: 'PATCH', body: input }),
   changePassword: (currentPassword: string, newPassword: string) =>

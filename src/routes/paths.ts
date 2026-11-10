@@ -3,6 +3,9 @@ import { isStaff, type User } from '@/types'
 export const PATHS = {
   login: '/login',
   register: '/register',
+  forgotPassword: '/forgot-password',
+  /** From the e-mailed link: ?token=… */
+  resetPassword: '/reset-password',
   profile: '/profile',
 
   // Shops

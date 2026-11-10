@@ -13,8 +13,10 @@ import RoundDetailPage from '@/pages/admin/RoundDetailPage'
 import RoundsPage from '@/pages/admin/RoundsPage'
 import ShopsPage from '@/pages/admin/ShopsPage'
 import StaffPage from '@/pages/admin/StaffPage'
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage'
 import ProfilePage from '@/pages/profile/ProfilePage'
 import CartPage from '@/pages/shop/CartPage'
 import MyPreordersPage from '@/pages/shop/MyPreordersPage'
@@ -33,9 +35,12 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter basename={import.meta.env.BASE_URL}>
           <Routes>
+            {/* From the e-mailed link: works logged in or out (it logs out after the reset). */}
+            <Route path={PATHS.resetPassword} element={<ResetPasswordPage />} />
             <Route element={<GuestOnly />}>
               <Route path={PATHS.login} element={<LoginPage />} />
               <Route path={PATHS.register} element={<RegisterPage />} />
+              <Route path={PATHS.forgotPassword} element={<ForgotPasswordPage />} />
             </Route>
 
             <Route element={<RequireAuth roles={['shop', 'admin', 'clerk']} />}>

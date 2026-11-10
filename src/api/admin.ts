@@ -51,6 +51,10 @@ export const adminApi = {
   updateClerk: (id: string, body: { name?: string; status?: 'approved' | 'suspended'; password?: string }) =>
     patch<StaffMember>(`/admin/staff/${id}`, body),
 
+  /** E-mail a shop the link to set a new password (when it forgot its own). */
+  sendPasswordReset: (shopId: string) =>
+    post<{ sentTo: string; minutes: number }>(`/admin/shops/${shopId}/password-reset`),
+
   tiers: () => request<Tier[]>('/admin/tiers'),
   createTier: (body: Pick<Tier, 'name' | 'weight' | 'maxPreorderQty' | 'sortOrder'>) =>
     post<Tier>('/admin/tiers', body),

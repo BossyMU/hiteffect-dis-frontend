@@ -343,8 +343,46 @@ function ShopModal({
         {shop.status === 'pending' && (
           <p className="text-xs text-muted-foreground">The shop is notified when it is approved.</p>
         )}
+        <PasswordResetRow shop={shop} />
       </div>
     </Modal>
+  )
+}
+
+/** Forgot their password: e-mail the shop the link to set a new one (it can also ask on the login page). */
+function PasswordResetRow({ shop }: { shop: User }) {
+  const { run } = useToast()
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState<{ sentTo: string; minutes: number } | null>(null)
+  if (shop.status !== 'approved' && shop.status !== 'pending') return null
+
+  async function send() {
+    setBusy(true)
+    await run(async () => {
+      setSent(await adminApi.sendPasswordReset(shop.id))
+    }, 'Password reset e-mail sent')
+    setBusy(false)
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3">
+      <p className="text-sm">
+        {sent ? (
+          <>
+            Sent to <span className="font-semibold">{sent.sentTo}</span>. The link works once, for{' '}
+            {sent.minutes} minutes.
+          </>
+        ) : (
+          <>
+            Forgot their password? E-mail them a link to set a new one. Shops can also use{' '}
+            <span className="font-semibold">Forgot password?</span> on the login page.
+          </>
+        )}
+      </p>
+      <Button size="sm" variant="outline" disabled={busy} onClick={() => void send()}>
+        {busy ? 'Sending…' : sent ? 'Send again' : 'Send reset e-mail'}
+      </Button>
+    </div>
   )
 }
 
