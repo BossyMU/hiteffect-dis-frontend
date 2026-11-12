@@ -51,6 +51,9 @@ export const adminApi = {
   updateClerk: (id: string, body: { name?: string; status?: 'approved' | 'suspended'; password?: string }) =>
     patch<StaffMember>(`/admin/staff/${id}`, body),
 
+  /** E-mail a receipt to its shop again, as a PDF. */
+  emailReceipt: (id: string) => post<{ ok: true }>(`/admin/receipts/${id}/email`),
+
   /** E-mail a shop the link to set a new password (when it forgot its own). */
   sendPasswordReset: (shopId: string) =>
     post<{ sentTo: string; minutes: number }>(`/admin/shops/${shopId}/password-reset`),

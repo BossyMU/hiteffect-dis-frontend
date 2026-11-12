@@ -364,6 +364,9 @@ export interface OrderPayment {
   /** The staff member who confirmed or rejected it (admin side only). */
   reviewedBy?: string | null
   rejectReason: string
+  /** The receipt issued when it was confirmed (ใบเสร็จรับเงิน), e.g. RC-2026-0001. */
+  receiptId?: string | null
+  receiptNo?: string | null
   /** Xendit's payment page, while an online payment is open. */
   checkoutUrl: string | null
   checkoutExpiresAt: string | null

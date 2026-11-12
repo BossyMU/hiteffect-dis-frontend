@@ -102,6 +102,23 @@ export async function request<T>(path: string, { method = 'GET', body, query, si
   return data as T
 }
 
+/** A file from the API (a receipt's PDF), fetched with the login token. */
+export async function requestFile(path: string, query?: Query): Promise<Blob> {
+  const token = tokenStore.get()
+  let res: Response
+  try {
+    res = await fetch(buildUrl(path, query), { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  } catch {
+    throw new ApiError(`Cannot reach the server at ${API_BASE_URL}`, 0)
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => null)
+    if (res.status === 401 && token) onUnauthorized?.()
+    throw new ApiError(data?.error?.message ?? `Request failed (${res.status})`, res.status)
+  }
+  return res.blob()
+}
+
 /** A readable message for any error thrown by an API call. */
 export function errorMessage(err: unknown) {
   if (err instanceof ApiError && err.details.length > 0) {

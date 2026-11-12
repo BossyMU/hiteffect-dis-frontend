@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Badge, DataTable, OrderStatusBadge, PaymentStatusBadge, TableCell, TableRow } from '@/components/ui'
+import { ReceiptActions } from '@/components/payments/ReceiptActions'
 import { PAYMENT_KIND_LABEL, PAYMENT_METHOD_LABEL } from '@/constants/status'
 import type { Order, OrderPayment } from '@/types'
 import { cn } from '@/utils/cn'
@@ -158,8 +159,17 @@ function TotalRow({
   )
 }
 
-/** Slips sent for the order: what it was for, how and when it was sent, status, amount. */
-export function OrderPaymentsTable({ payments }: { payments: OrderPayment[] }) {
+/**
+ * Slips sent for the order: what it was for, how and when it was sent, status, amount, and the
+ * receipt of a confirmed one. `staff`: staff can also e-mail the receipt again.
+ */
+export function OrderPaymentsTable({
+  payments,
+  staff = false,
+}: {
+  payments: OrderPayment[]
+  staff?: boolean
+}) {
   return (
     <DataTable
       headers={[
@@ -176,6 +186,14 @@ export function OrderPaymentsTable({ payments }: { payments: OrderPayment[] }) {
               {PAYMENT_METHOD_LABEL[p.method]} · {formatDateTime(p.submittedAt)}
               {p.reference && ` · ${p.reference}`}
             </p>
+            {p.receiptId && p.receiptNo && (
+              <ReceiptActions
+                receiptId={p.receiptId}
+                receiptNo={p.receiptNo}
+                staff={staff}
+                className="mt-1"
+              />
+            )}
           </TableCell>
           <TableCell className={cell}>
             <PaymentStatusBadge status={p.status} online={p.method === 'Xendit'} />
@@ -222,7 +240,7 @@ export function OrderSummary({ order }: { order: Order }) {
       {order.payments.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Payments</h3>
-          <OrderPaymentsTable payments={order.payments} />
+          <OrderPaymentsTable payments={order.payments} staff />
         </div>
       )}
     </div>

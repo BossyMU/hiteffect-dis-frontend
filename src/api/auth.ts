@@ -1,5 +1,5 @@
 import type { AppNotification, User } from '@/types'
-import { request } from './client'
+import { request, requestFile } from './client'
 
 export interface RegisterInput {
   email: string
@@ -30,6 +30,8 @@ export const authApi = {
   resetPassword: (token: string, password: string) =>
     request<{ email: string }>('/auth/reset-password', { method: 'POST', body: { token, password } }),
   me: () => request<User>('/me'),
+  /** A receipt's PDF: the shop's own, or any for staff. */
+  receiptPdf: (id: string) => requestFile(`/me/receipts/${id}/pdf`),
   updateProfile: (input: ProfileInput) => request<User>('/me', { method: 'PATCH', body: input }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<void>('/me/password', { method: 'POST', body: { currentPassword, newPassword } }),
