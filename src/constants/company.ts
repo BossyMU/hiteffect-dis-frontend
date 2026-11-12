@@ -4,8 +4,9 @@ import { APP_ENV } from '@/config/env'
  * Where shops send money. Shown with every slip payment: a PromptPay QR code with the amount
  * filled in, and the bank account.
  *
- * promptPay: the mobile number (e.g. 0812345678) or 13-digit tax ID the PromptPay account is
- * registered to.
+ * promptPay: the PromptPay ID the money goes to: a mobile number (e.g. 0812345678), a 13-digit
+ * tax ID, or a 15-digit e-wallet ID. Ours is the e-wallet ID inside KBank's "receive money" QR
+ * (K PLUS) for the account below, so a payment lands in that account.
  *
  * Production shows the real account. UAT and local copies show test details, so nobody testing
  * there sends real money: the test PromptPay ID can't belong to anyone (its last digit fails the
@@ -13,8 +14,8 @@ import { APP_ENV } from '@/config/env'
  */
 const REAL_PAYMENT_DETAILS = {
   testOnly: false,
-  promptPay: '0887688172',
-  bankName: 'Kasikornbank (KBank)',
+  promptPay: '004999206912726',
+  bankName: 'ธนาคารกสิกรไทย (KBank)',
   bankAccount: '178-3-23225-8',
   accountName: 'นาย นนทนาถ จันทวงศ์',
 }
